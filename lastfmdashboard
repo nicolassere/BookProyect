@@ -1,0 +1,404 @@
+import React, { useState, useMemo } from 'react';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Upload, Music, TrendingUp, Clock, Calendar, User } from 'lucide-react';
+import Papa from 'papaparse';
+
+const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'];
+
+const LastFmDashboard = () => {
+  const [scrobbles, setScrobbles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('lastfm_api_key') || '');
+  const [username, setUsername] = useState(localStorage.getItem('lastfm_username') || '');
+  const [activeTab, setActiveTab] = useState('upload');
+
+  // Función para cargar desde CSV
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    Papa.parse(file, {
+      header: true,
+      complete: (results) => {
+        setScrobbles(results.data.filter(row => row.artist && row.song));
+        setLoading(false);
+      },
+      error: () => {
+        alert('Error al procesar el archivo CSV');
+        setLoading(false);
+      }
+    });
+  };
+
+  // Función para cargar desde API
+  const fetchFromAPI = async () => {
+    if (!apiKey || !username) {
+      alert('Por favor ingresa tu API Key y usuario de Last.fm');
+      return;
+    }
+
+    localStorage.setItem('lastfm_api_key', apiKey);
+    localStorage.setItem('lastfm_username', username);
+
+    setLoading(true);
+    let allTracks = [];
+    let page = 1;
+    let totalPages = 1;
+
+    try {
+      while (page <= totalPages && page <= 10) {
+        const response = await fetch(
+          `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${apiKey}&format=json&limit=200&page=${page}`
+        );
+        const data = await response.json();
+
+        if (!data.recenttracks) {
+          alert('Error: Verifica tu usuario o API key');
+          break;
+        }
+
+        const tracks = data.recenttracks.track;
+        totalPages = Math.min(parseInt(data.recenttracks['@attr'].totalPages), 10);
+
+        tracks.forEach(track => {
+          if (track.date) {
+            allTracks.push({
+              artist: track.artist['#text'] || track.artist,
+              song: track.name,
+              album: track.album['#text'] || track.album,
+              date: track.date['#text'],
+              url: track.url
+            });
+          }
+        });
+
+        page++;
+      }
+
+      setScrobbles(allTracks);
+      setLoading(false);
+    } catch (error) {
+      alert('Error al conectar con Last.fm');
+      setLoading(false);
+    }
+  };
+
+  // Cálculo de estadísticas
+  const stats = useMemo(() => {
+    if (scrobbles.length === 0) return null;
+
+    // Top artistas
+    const artistCounts = {};
+    scrobbles.forEach(s => {
+      artistCounts[s.artist] = (artistCounts[s.artist] || 0) + 1;
+    });
+    const topArtists = Object.entries(artistCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([artist, count]) => ({ artist, count }));
+
+    // Top canciones
+    const songCounts = {};
+    scrobbles.forEach(s => {
+      const key = `${s.artist} - ${s.song}`;
+      songCounts[key] = (songCounts[key] || 0) + 1;
+    });
+    const topSongs = Object.entries(songCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([song, count]) => ({ song, count }));
+
+    // Reproducciones por hora
+    const hourCounts = new Array(24).fill(0);
+    scrobbles.forEach(s => {
+      if (s.date && s.date !== 'Now Playing') {
+        const date = new Date(s.date);
+        const hour = date.getHours();
+        hourCounts[hour]++;
+      }
+    });
+    const hourlyData = hourCounts.map((count, hour) => ({
+      hour: `${hour}:00`,
+      count
+    }));
+
+    // Reproducciones por día de la semana
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const dayCounts = new Array(7).fill(0);
+    scrobbles.forEach(s => {
+      if (s.date && s.date !== 'Now Playing') {
+        const date = new Date(s.date);
+        const day = date.getDay();
+        dayCounts[day]++;
+      }
+    });
+    const dailyData = dayCounts.map((count, day) => ({
+      day: dayNames[day],
+      count
+    }));
+
+    // Top álbumes
+    const albumCounts = {};
+    scrobbles.forEach(s => {
+      if (s.album) {
+        const key = `${s.artist} - ${s.album}`;
+        albumCounts[key] = (albumCounts[key] || 0) + 1;
+      }
+    });
+    const topAlbums = Object.entries(albumCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([album, count]) => ({ album, count }));
+
+    return {
+      total: scrobbles.length,
+      topArtists,
+      topSongs,
+      hourlyData,
+      dailyData,
+      topAlbums,
+      uniqueArtists: Object.keys(artistCounts).length,
+      uniqueSongs: Object.keys(songCounts).length
+    };
+  }, [scrobbles]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-pink-800 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 shadow-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <Music className="w-8 h-8 text-white" />
+            <h1 className="text-3xl font-bold text-white">Last.fm Statistics Dashboard</h1>
+          </div>
+          
+          {/* Tabs */}
+          <div className="flex gap-4 mb-4">
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                activeTab === 'upload'
+                  ? 'bg-white text-purple-900'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              Cargar CSV
+            </button>
+            <button
+              onClick={() => setActiveTab('api')}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                activeTab === 'api'
+                  ? 'bg-white text-purple-900'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              Conectar API
+            </button>
+          </div>
+
+          {/* Upload/API Section */}
+          {activeTab === 'upload' ? (
+            <div className="bg-white/20 rounded-xl p-6">
+              <label className="flex flex-col items-center justify-center gap-4 cursor-pointer">
+                <Upload className="w-12 h-12 text-white" />
+                <span className="text-white font-semibold">
+                  Arrastra o haz clic para cargar tu CSV de Last.fm
+                </span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="bg-white/20 rounded-xl p-6 space-y-4">
+              <div>
+                <label className="text-white font-semibold block mb-2">Usuario de Last.fm</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="tu_usuario"
+                  className="w-full px-4 py-2 rounded-lg bg-white/90 text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="text-white font-semibold block mb-2">API Key</label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="tu_api_key"
+                  className="w-full px-4 py-2 rounded-lg bg-white/90 text-gray-900"
+                />
+                <p className="text-white/70 text-sm mt-2">
+                  Obtén tu API key en:{' '}
+                  <a
+                    href="https://www.last.fm/api/account/create"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    last.fm/api
+                  </a>
+                </p>
+              </div>
+              <button
+                onClick={fetchFromAPI}
+                disabled={loading}
+                className="w-full bg-white text-purple-900 font-bold py-3 rounded-lg hover:bg-white/90 transition disabled:opacity-50"
+              >
+                {loading ? 'Cargando...' : 'Cargar desde Last.fm (últimas 2000 reproducciones)'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="text-center text-white text-xl py-8">
+            Cargando datos...
+          </div>
+        )}
+
+        {/* Statistics */}
+        {stats && !loading && (
+          <>
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <Music className="w-6 h-6" />
+                  <h3 className="font-semibold">Total Scrobbles</h3>
+                </div>
+                <p className="text-3xl font-bold">{stats.total.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <User className="w-6 h-6" />
+                  <h3 className="font-semibold">Artistas Únicos</h3>
+                </div>
+                <p className="text-3xl font-bold">{stats.uniqueArtists.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingUp className="w-6 h-6" />
+                  <h3 className="font-semibold">Canciones Únicas</h3>
+                </div>
+                <p className="text-3xl font-bold">{stats.uniqueSongs.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <Clock className="w-6 h-6" />
+                  <h3 className="font-semibold">Top Artista</h3>
+                </div>
+                <p className="text-xl font-bold truncate">{stats.topArtists[0]?.artist}</p>
+                <p className="text-sm opacity-75">{stats.topArtists[0]?.count} reproducciones</p>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Artists */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Top 10 Artistas</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.topArtists}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="artist" tick={{ fill: 'white', fontSize: 12 }} angle={-45} textAnchor="end" height={100} />
+                    <YAxis tick={{ fill: 'white' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }} />
+                    <Bar dataKey="count" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Hourly Activity */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Actividad por Hora</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={stats.hourlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="hour" tick={{ fill: 'white', fontSize: 12 }} />
+                    <YAxis tick={{ fill: 'white' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }} />
+                    <Line type="monotone" dataKey="count" stroke="#ec4899" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Daily Activity */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Actividad por Día</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.dailyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="day" tick={{ fill: 'white' }} />
+                    <YAxis tick={{ fill: 'white' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }} />
+                    <Bar dataKey="count" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top Albums */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Top 6 Álbumes</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={stats.topAlbums}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ album, percent }) => `${album.split(' - ')[1]?.substring(0, 15) || 'Sin álbum'}... (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                    >
+                      {stats.topAlbums.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Songs List */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mt-6">
+              <h2 className="text-xl font-bold text-white mb-4">Top 10 Canciones</h2>
+              <div className="space-y-2">
+                {stats.topSongs.map((item, index) => (
+                  <div key={index} className="bg-white/10 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <span className="text-white/50 font-bold mr-3">#{index + 1}</span>
+                      <span className="text-white font-semibold">{item.song}</span>
+                    </div>
+                    <span className="text-white/70 font-bold">{item.count} plays</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Empty State */}
+        {!stats && !loading && (
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-12 text-center">
+            <Music className="w-16 h-16 text-white/50 mx-auto mb-4" />
+            <p className="text-white/70 text-lg">
+              Carga tu archivo CSV o conecta con la API de Last.fm para ver tus estadísticas
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LastFmDashboard;
