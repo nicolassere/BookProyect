@@ -1,123 +1,97 @@
-import { Calendar, Music, Users, Disc, TrendingUp } from 'lucide-react';
+import { Trophy, Crown, Medal } from 'lucide-react';
 import type { Stats } from '../types';
 
-interface YearsViewProps {
+interface RankingViewProps {
   stats: Stats;
 }
 
-export const YearsView: React.FC<YearsViewProps> = ({ stats }) => {
-  const years = stats.yearlyStats || [];
+export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
+  const rankings = stats.cumulativeRanking || [];
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
         <div className="flex items-center gap-3 mb-2">
-          <Calendar className="w-8 h-8 text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Year by Year Breakdown</h2>
+          <Crown className="w-8 h-8 text-yellow-600" />
+          <h2 className="text-2xl font-bold text-gray-900">All-Time Cumulative Ranking</h2>
         </div>
-        <p className="text-gray-600">Your music journey through the years</p>
+        <p className="text-gray-600">Total days each artist has been your #1 most played (Djokovic-style)</p>
       </div>
 
-      {years.length === 0 ? (
+      {rankings.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No yearly data available</p>
+          <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No ranking data available</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {years.map((year, index) => (
+        <div className="grid grid-cols-1 gap-4">
+          {rankings.map((item, index) => (
             <div 
-              key={year.year}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              key={index}
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-md ${
+                index === 0 ? 'border-yellow-400 bg-gradient-to-r from-yellow-50 to-white' :
+                index === 1 ? 'border-gray-400 bg-gradient-to-r from-gray-50 to-white' :
+                index === 2 ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-white' :
+                'border-gray-200'
+              }`}
             >
-              {/* Year Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-3xl font-bold mb-1">{year.year}</h3>
-                    <p className="text-blue-100">
-                      {year.totalScrobbles.toLocaleString()} total scrobbles
-                    </p>
-                  </div>
-                  {index === 0 && (
-                    <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                      <span className="text-sm font-semibold">Latest Year</span>
-                    </div>
+              <div className="flex items-center gap-4">
+                {/* Medalla/Posición */}
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                  index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
+                  index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                  'bg-gradient-to-br from-blue-400 to-blue-600'
+                }`}>
+                  {index < 3 ? (
+                    <Medal className="w-8 h-8 text-white" />
+                  ) : (
+                    <span className="text-white font-bold text-2xl">{index + 1}</span>
                   )}
+                </div>
+
+                {/* Info del artista */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-bold text-gray-900 truncate">
+                      {item.artist}
+                    </h3>
+                    {item.isCurrentLeader && (
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                        Current Leader
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {item.totalPlays.toLocaleString()} total plays
+                  </p>
+                </div>
+
+                {/* Stats de días */}
+                <div className="text-right">
+                  <div className="text-4xl font-bold text-gray-900">
+                    {item.daysAsNumber1}
+                  </div>
+                  <div className="text-sm text-gray-600 font-medium">
+                    days as #1
+                  </div>
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Music className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-600">Scrobbles</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {year.totalScrobbles.toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-5 h-5 text-emerald-600" />
-                      <span className="text-sm font-medium text-gray-600">Artists</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {year.uniqueArtists.toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Disc className="w-5 h-5 text-violet-600" />
-                      <span className="text-sm font-medium text-gray-600">Songs</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {year.uniqueSongs.toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-5 h-5 text-amber-600" />
-                      <span className="text-sm font-medium text-gray-600">Avg/Day</span>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(year.totalScrobbles / 365)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Top Artist & Song */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Users className="w-5 h-5 text-blue-600" />
-                      <h4 className="font-semibold text-gray-900">Top Artist</h4>
-                    </div>
-                    <p className="text-lg font-bold text-gray-900 mb-1 truncate">
-                      {year.topArtist}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {year.topArtistPlays.toLocaleString()} plays
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Music className="w-5 h-5 text-purple-600" />
-                      <h4 className="font-semibold text-gray-900">Top Song</h4>
-                    </div>
-                    <p className="text-lg font-bold text-gray-900 mb-1 truncate">
-                      {year.topSong}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {year.topSongPlays.toLocaleString()} plays
-                    </p>
-                  </div>
+              {/* Barra de progreso */}
+              <div className="mt-4">
+                <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                      index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-600' :
+                      index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                      'bg-gradient-to-r from-blue-400 to-blue-600'
+                    }`}
+                    style={{ 
+                      width: `${(item.daysAsNumber1 / rankings[0].daysAsNumber1) * 100}%` 
+                    }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -125,36 +99,47 @@ export const YearsView: React.FC<YearsViewProps> = ({ stats }) => {
         </div>
       )}
 
-      {/* Comparison Chart */}
-      {years.length > 1 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Year Comparison</h3>
-          <div className="space-y-3">
-            {years.map((year) => {
-              const maxScrobbles = Math.max(...years.map(y => y.totalScrobbles));
-              const percentage = (year.totalScrobbles / maxScrobbles) * 100;
-              
-              return (
-                <div key={year.year} className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700 w-16">
-                    {year.year}
-                  </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-10 relative overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-end px-3 transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    >
-                      <span className="text-xs font-semibold text-white">
-                        {year.totalScrobbles.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* Summary stats */}
+      {rankings.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <Crown className="w-6 h-6 text-yellow-500" />
+              <h3 className="font-semibold text-gray-900">Champion</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 mb-1">
+              {rankings[0]?.artist || '-'}
+            </p>
+            <p className="text-sm text-gray-600">
+              {rankings[0]?.daysAsNumber1 || 0} days at #1
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <Trophy className="w-6 h-6 text-blue-500" />
+              <h3 className="font-semibold text-gray-900">Total Leaders</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 mb-1">
+              {rankings.length}
+            </p>
+            <p className="text-sm text-gray-600">Different #1 artists</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <Medal className="w-6 h-6 text-emerald-500" />
+              <h3 className="font-semibold text-gray-900">Dominance</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 mb-1">
+              {rankings[0] ? ((rankings[0].daysAsNumber1 / rankings.reduce((sum, r) => sum + r.daysAsNumber1, 0)) * 100).toFixed(1) : 0}%
+            </p>
+            <p className="text-sm text-gray-600">of top position</p>
           </div>
         </div>
       )}
     </div>
   );
 };
+
+export default RankingView;

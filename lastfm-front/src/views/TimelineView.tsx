@@ -8,7 +8,7 @@ interface TimelineViewProps {
 
 type TimelineMode = 'days' | 'months' | 'years';
 
-const TimelineView: React.FC<TimelineViewProps> = ({ stats }) => {
+export const TimelineView: React.FC<TimelineViewProps> = ({ stats }) => {
   const [mode, setMode] = useState<TimelineMode>('days');
   const [topN, setTopN] = useState(5);
 
