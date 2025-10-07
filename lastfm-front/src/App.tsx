@@ -1,5 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
 import { Upload, Music } from 'lucide-react';
+import Papa from 'papaparse';
 import type { Scrobble } from './types';
 import { calculateStats, getDateRange } from './utils/stats';
 import { Header } from './components/Header';
@@ -62,30 +63,40 @@ function App() {
     if (!file) return;
 
     setLoading(true);
-    const reader = new FileReader();
     
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      
-      const data = lines.slice(1)
-        .filter(line => line.trim())
-        .map(line => {
-          const values = line.split(',');
-          const obj: any = {};
-          headers.forEach((header, i) => {
-            obj[header] = values[i]?.trim() || '';
-          });
-          return obj as Scrobble;
-        });
-      
-      setScrobbles(data);
-      setLoading(false);
-      setShowUploadModal(false);
-    };
-    
-    reader.readAsText(file);
+    // FIXED: Usar Papaparse para parsing correcto de CSV con comillas
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const data = results.data
+          .filter((row: any) => row.artist && row.song)
+          .map((row: any) => ({
+            artist: row.artist?.trim() || '',
+            song: row.song?.trim() || '',
+            album: row.album?.trim() || '',
+            date: row.date?.trim() || '',
+            timestamp: row.timestamp?.trim() || '',
+            url: row.url?.trim() || ''
+          })) as Scrobble[];
+        
+        console.log('📊 Loaded scrobbles:', data.length);
+        console.log('🔍 Sample date:', data[0]?.date);
+        console.log('🔍 Sample timestamp:', data[0]?.timestamp);
+        
+        setScrobbles(data);
+        setLoading(false);
+        setShowUploadModal(false);
+        
+        if (data.length === 0) {
+          alert('No se encontraron datos válidos en el CSV');
+        }
+      },
+      error: (error) => {
+        alert('Error al procesar el archivo CSV: ' + error.message);
+        setLoading(false);
+      }
+    });
   };
 
   const demoData = () => {
@@ -97,13 +108,22 @@ function App() {
     for (let i = 0; i < 1000; i++) {
       const artistIndex = Math.floor(Math.random() * artists.length);
       const daysAgo = Math.floor(Math.random() * 365);
+      const randomHour = Math.floor(Math.random() * 24);
+      const randomMinute = Math.floor(Math.random() * 60);
+      
       const timestamp = Math.floor((now - daysAgo * 24 * 60 * 60 * 1000) / 1000);
+      const date = new Date(timestamp * 1000);
+      date.setHours(randomHour, randomMinute);
+      
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dateStr = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ${randomHour.toString().padStart(2, '0')}:${randomMinute.toString().padStart(2, '0')}`;
+      
       demo.push({
         artist: artists[artistIndex],
         song: songs[artistIndex],
         album: `Album ${artistIndex + 1}`,
-        date: new Date(timestamp * 1000).toISOString(),
-        timestamp: timestamp.toString()
+        date: dateStr,
+        timestamp: Math.floor(date.getTime() / 1000).toString()
       });
     }
     
