@@ -1,22 +1,4 @@
-// NEW: Monthly timeline
-export interface Top5MonthlyTimeline {
-  artist: string;
-  monthsAsTop: number;
-  totalPlays: number;
-}
-
-// NEW: Cumulative ranking (estilo Djokovic)
-export interface CumulativeRanking {
-  artist: string;
-  daysAsNumber1: number;
-  totalPlays: number;
-  isCurrentLeader: boolean;
-}
-
-// NEW: Yearly stats
-export interface YearlyStats {
-  year: string;
-  totalScrobbles:export interface Scrobble {
+export interface Scrobble {
   artist: string;
   song: string;
   album: string;
@@ -50,14 +32,23 @@ export interface DailyData {
   count: number;
 }
 
-// NEW: Monthly timeline
+export interface ArtistEvolution {
+  month: string;
+  [artist: string]: number | string;
+}
+
+export interface Top5Timeline {
+  artist: string;
+  daysAsTop: number;
+  totalPlays: number;
+}
+
 export interface Top5MonthlyTimeline {
   artist: string;
   monthsAsTop: number;
   totalPlays: number;
 }
 
-// NEW: Cumulative ranking (estilo Djokovic)
 export interface CumulativeRanking {
   artist: string;
   daysAsNumber1: number;
@@ -65,7 +56,6 @@ export interface CumulativeRanking {
   isCurrentLeader: boolean;
 }
 
-// NEW: Yearly stats
 export interface YearlyStats {
   year: string;
   totalScrobbles: number;
@@ -88,9 +78,9 @@ export interface Stats {
   uniqueSongs: number;
   artistEvolution: ArtistEvolution[];
   top5Timeline: Top5Timeline[];
-  top5MonthlyTimeline: Top5MonthlyTimeline[];  // NEW
-  cumulativeRanking: CumulativeRanking[];      // NEW
-  yearlyStats: YearlyStats[];                   // NEW
+  top5MonthlyTimeline: Top5MonthlyTimeline[];
+  cumulativeRanking: CumulativeRanking[];
+  yearlyStats: YearlyStats[];
 }
 
 export interface LastFmArtist {

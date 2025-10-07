@@ -5,14 +5,7 @@ const parseDate = (dateStr: string, timestamp?: string): Date | null => {
   if (!dateStr || dateStr === 'Now Playing') return null;
   
   try {
-    // PRIMERO: Intentar usar timestamp si está disponible (más confiable)
-    if (timestamp) {
-      const ts = parseInt(timestamp);
-      if (!isNaN(ts) && ts > 1000000000) {
-        const date = new Date(ts * 1000);
-        if (!isNaN(date.getTime())) return date;
-      }
-    }
+    
     
     // Formato ISO
     let date = new Date(dateStr);
