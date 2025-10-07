@@ -56,6 +56,11 @@ export interface CumulativeRanking {
   isCurrentLeader: boolean;
 }
 
+export interface DayOfMonthData {
+  day: number;
+  count: number;
+}
+
 export interface YearlyStats {
   year: string;
   totalScrobbles: number;
@@ -73,6 +78,7 @@ export interface Stats {
   topSongs: SongCount[];
   hourlyData: HourlyData[];
   dailyData: DailyData[];
+  dayOfMonthData: DayOfMonthData[];
   topAlbums: AlbumCount[];
   uniqueArtists: number;
   uniqueSongs: number;

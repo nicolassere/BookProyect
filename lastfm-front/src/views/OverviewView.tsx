@@ -1,5 +1,5 @@
 import { Music, Users, Disc, TrendingUp, Clock, Calendar } from 'lucide-react';
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { useState } from 'react';
 import { StatCard } from '../components/StatCard';
 import { SimpleBarChart } from '../components/SimpleBarChart';
 import type { Stats } from '../types';
@@ -9,6 +9,8 @@ interface OverviewViewProps {
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({ stats }) => {
+  const [hoveredHour, setHoveredHour] = useState<number | null>(null);
+
   // Preparar datos para el reloj radial
   const maxHourCount = Math.max(...stats.hourlyData.map(h => h.count));
   
@@ -38,48 +40,105 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ stats }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-600" />
+            <Clock className="w-5 h-5 text-gray-900" />
             Activity by Hour
           </h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <RadialBarChart 
-              cx="50%" 
-              cy="50%" 
-              innerRadius="10%" 
-              outerRadius="95%"
-              data={hourlyRadialData}
-              startAngle={90}
-              endAngle={450}
-            >
-              <PolarAngleAxis 
-                type="number" 
-                domain={[0, 360]} 
-                angleAxisId={0}
-                tick={false}
-              />
-              <RadialBar
-                background={{ fill: '#f3f4f6' }}
-                dataKey="fill"
-                cornerRadius={0}
-                fill="#3b82f6"
-                label={false}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                }}
-                formatter={(value: any, name: string, props: any) => [
-                  `${props.payload.count.toLocaleString()} plays`,
-                  props.payload.hour
-                ]}
-              />
-            </RadialBarChart>
-          </ResponsiveContainer>
+          <div className="relative" style={{ height: '380px' }}>
+            <svg viewBox="0 0 400 400" className="w-full h-full">
+              <g transform="translate(200, 200)">
+                {/* 24 Segmentos saliendo del centro */}
+                {hourlyRadialData.map((item, index) => {
+                  const startAngle = (index * 15 - 90 ) * (Math.PI / 180);
+                  const endAngle = ((index + 1) * 15 - 90) * (Math.PI / 180);
+                  const innerRadius = 30;
+                  const outerRadius = 30 + (item.fill / 100) * 150;
+                  
+                  const x1 = Math.cos(startAngle) * innerRadius;
+                  const y1 = Math.sin(startAngle) * innerRadius;
+                  const x2 = Math.cos(endAngle) * innerRadius;
+                  const y2 = Math.sin(endAngle) * innerRadius;
+                  const x3 = Math.cos(endAngle) * outerRadius;
+                  const y3 = Math.sin(endAngle) * outerRadius;
+                  const x4 = Math.cos(startAngle) * outerRadius;
+                  const y4 = Math.sin(startAngle) * outerRadius;
+                  
+                  const largeArcFlag = 0;
+                  const path = `
+                    M ${x1} ${y1} 
+                    A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}
+                    L ${x3} ${y3}
+                    A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${x4} ${y4}
+                    Z
+                  `;
+                  
+                  const isHovered = hoveredHour === index;
+                  
+                  return (
+                    <g key={`hour-${index}`}>
+                      {/* Fondo gris claro */}
+                      <path 
+                        d={`
+                          M ${x1} ${y1} 
+                          A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${x2} ${y2}
+                          L ${Math.cos(endAngle) * 180} ${Math.sin(endAngle) * 180}
+                          A 180 180 0 ${largeArcFlag} 0 ${Math.cos(startAngle) * 180} ${Math.sin(startAngle) * 180}
+                          Z
+                        `}
+                        fill="#f3f4f6" 
+                        stroke="#fff" 
+                        strokeWidth="2"
+                      />
+                      {/* Segmento negro que se llena */}
+                      <path 
+                        d={path} 
+                        fill={isHovered ? "#3b82f6" : "#111827"}
+                        stroke="#fff" 
+                        strokeWidth="2"
+                        style={{ 
+                          cursor: 'pointer',
+                          transition: 'fill 0.2s ease',
+                        }}
+                        onMouseEnter={() => setHoveredHour(index)}
+                        onMouseLeave={() => setHoveredHour(null)}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* Reloj en el centro */}
+                <circle cx="0" cy="0" r="25" fill="#f9fafb" stroke="#e5e7eb" strokeWidth="2" />
+                <text 
+                  x="0" 
+                  y="0" 
+                  textAnchor="middle" 
+                  dominantBaseline="middle" 
+                  className="text-xl font-bold"
+                  fill="#111827"
+                >
+                  🕐
+                </text>
+              </g>
+            </svg>
+
+            {/* Tooltip flotante */}
+            {hoveredHour !== null && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-3 rounded-lg shadow-lg border-2 border-blue-500 z-10">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {hourlyRadialData[hoveredHour].hour}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {hourlyRadialData[hoveredHour].count.toLocaleString()} plays
+                  </div>
+                  <div className="text-xs text-blue-600 font-semibold mt-1">
+                    {hourlyRadialData[hoveredHour].fill.toFixed(1)}% of peak
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           <p className="text-xs text-gray-500 text-center mt-2">
-            Each segment represents one hour - fuller = more scrobbles
+            Hover over segments to see details - longer = more plays
           </p>
         </div>
 

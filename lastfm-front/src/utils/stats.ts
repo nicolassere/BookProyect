@@ -5,7 +5,14 @@ const parseDate = (dateStr: string, timestamp?: string): Date | null => {
   if (!dateStr || dateStr === 'Now Playing') return null;
   
   try {
-    
+    // PRIMERO: Intentar usar timestamp si está disponible (más confiable)
+    if (timestamp) {
+      const ts = parseInt(timestamp);
+      if (!isNaN(ts) && ts > 1000000000) {
+        const date = new Date(ts * 1000);
+        if (!isNaN(date.getTime())) return date;
+      }
+    }
     
     // Formato ISO
     let date = new Date(dateStr);
@@ -137,6 +144,21 @@ export const calculateStats = (
     day: dayNames[day],
     count,
   }));
+  // Day of month data (1-31)
+  const dayOfMonthCounts = new Array(31).fill(0);
+  filtered.forEach(s => {
+    const date = parseDate(s.date, s.timestamp);
+    if (date) {
+      const dayOfMonth = date.getDate(); // 1-31
+      if (!isNaN(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= 31) {
+        dayOfMonthCounts[dayOfMonth - 1]++;
+      }
+    }
+  });
+  const dayOfMonthData = dayOfMonthCounts.map((count, index) => ({
+    day: index + 1,
+    count,
+  }));
 
   // Album counts
   const albumCounts: Record<string, number> = {};
@@ -164,6 +186,7 @@ export const calculateStats = (
     topSongs,
     hourlyData,
     dailyData,
+    dayOfMonthData,
     topAlbums,
     uniqueArtists: Object.keys(artistCounts).length,
     uniqueSongs: Object.keys(songCounts).length,
