@@ -179,6 +179,7 @@ export const calculateStats = (
   const top5MonthlyTimeline = calculateTop5MonthlyTimeline(filtered); // NEW
   const cumulativeRanking = calculateCumulativeRanking(filtered); // NEW
   const yearlyStats = calculateYearlyStats(filtered); // NEW
+  const top5Ranking = calculateTop5Ranking(filtered); // NEW
 
   return {
     total: filtered.length,
@@ -194,6 +195,7 @@ export const calculateStats = (
     top5Timeline,
     top5MonthlyTimeline,
     cumulativeRanking,
+    top5Ranking, 
     yearlyStats,
   };
 };
@@ -310,59 +312,69 @@ function calculateTop5MonthlyTimeline(scrobbles: Scrobble[]) {
     .slice(0, 5);
 }
 
+
 // NEW: Ranking acumulado (estilo Djokovic) - Días totales como #1
 function calculateCumulativeRanking(scrobbles: Scrobble[]) {
+  if (scrobbles.length === 0) return [];
+
+  // Ordenar cronológicamente
+  const sortedScrobbles = [...scrobbles]
+    .map(s => ({
+      ...s,
+      parsedDate: parseDate(s.date, s.timestamp)
+    }))
+    .filter(s => s.parsedDate !== null)
+    .sort((a, b) => {
+      const dateA = a.parsedDate!;
+      const dateB = b.parsedDate!;
+      return dateA.getTime() - dateB.getTime();
+    });
+
+  if (sortedScrobbles.length === 0) return [];
+
+  // Calcular plays acumulados día por día
+  const dailyLeader: Record<string, string> = {};
+  const cumulativePlays: Record<string, number> = {};
+  
+  sortedScrobbles.forEach(s => {
+    const date = s.parsedDate!;
+    const dayKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    
+    // Actualizar plays acumulados
+    cumulativePlays[s.artist] = (cumulativePlays[s.artist] || 0) + 1;
+    
+    // Encontrar el líder de ese día (el que tiene más plays acumulados hasta ese momento)
+    const leader = Object.entries(cumulativePlays)
+      .sort((a, b) => b[1] - a[1])[0];
+    
+    if (leader) {
+      dailyLeader[dayKey] = leader[0];
+    }
+  });
+
+  // Contar días como #1 para cada artista
+  const daysAsLeader: Record<string, number> = {};
+  Object.values(dailyLeader).forEach(artist => {
+    daysAsLeader[artist] = (daysAsLeader[artist] || 0) + 1;
+  });
+
+  // Obtener total de plays
   const totalPlays: Record<string, number> = {};
   scrobbles.forEach(s => {
     totalPlays[s.artist] = (totalPlays[s.artist] || 0) + 1;
   });
 
-  // Ordenar cronológicamente
-  const sortedScrobbles = [...scrobbles].sort((a, b) => {
-    const dateA = parseDate(a.date, a.timestamp);
-    const dateB = parseDate(b.date, b.timestamp);
-    if (!dateA || !dateB) return 0;
-    return dateA.getTime() - dateB.getTime();
-  });
+  // Determinar el líder actual (último día)
+  const allDays = Object.keys(dailyLeader).sort();
+  const currentLeader = allDays.length > 0 ? dailyLeader[allDays[allDays.length - 1]] : '';
 
-  // Calcular quién fue #1 en cada momento
-  const cumulativePlays: Record<string, number> = {};
-  let currentLeader = '';
-  let daysAsLeader: Record<string, number> = {};
-  let lastDate: Date | null = null;
+  console.log('📊 Cumulative Ranking Debug:');
+  console.log('Total unique days:', allDays.length);
+  console.log('Current leader:', currentLeader);
+  console.log('Days as #1:', daysAsLeader);
 
-  sortedScrobbles.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
-    if (!date) return;
-
-    cumulativePlays[s.artist] = (cumulativePlays[s.artist] || 0) + 1;
-
-    // Encontrar líder actual
-    const leader = Object.entries(cumulativePlays)
-      .sort((a, b) => b[1] - a[1])[0][0];
-
-    // Si cambió el líder, contar los días
-    if (leader !== currentLeader && lastDate) {
-      const daysDiff = Math.floor((date.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (currentLeader) {
-        daysAsLeader[currentLeader] = (daysAsLeader[currentLeader] || 0) + Math.max(daysDiff, 1);
-      }
-      currentLeader = leader;
-    } else if (!currentLeader) {
-      currentLeader = leader;
-    }
-
-    lastDate = date;
-  });
-
-  // Agregar días del líder actual hasta hoy
-  if (currentLeader && lastDate) {
-    const today = new Date();
-    const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-    daysAsLeader[currentLeader] = (daysAsLeader[currentLeader] || 0) + Math.max(daysDiff, 1);
-  }
-
-  return Object.entries(daysAsLeader)
+ return Object.entries(daysAsLeader)
+    .filter(([artist, days]) => days >= 3) // Solo artistas con 3+ días como #1
     .map(([artist, days]) => ({
       artist,
       daysAsNumber1: days,
@@ -373,6 +385,78 @@ function calculateCumulativeRanking(scrobbles: Scrobble[]) {
     .slice(0, 10);
 }
 
+// NEW: Ranking Top 5 - Días totales en el Top 5
+function calculateTop5Ranking(scrobbles: Scrobble[]) {
+  if (scrobbles.length === 0) return [];
+
+  // Ordenar cronológicamente
+  const sortedScrobbles = [...scrobbles]
+    .map(s => ({
+      ...s,
+      parsedDate: parseDate(s.date, s.timestamp)
+    }))
+    .filter(s => s.parsedDate !== null)
+    .sort((a, b) => {
+      const dateA = a.parsedDate!;
+      const dateB = b.parsedDate!;
+      return dateA.getTime() - dateB.getTime();
+    });
+
+  if (sortedScrobbles.length === 0) return [];
+
+  // Calcular plays acumulados día por día y guardar Top 5
+  const dailyTop5: Record<string, string[]> = {};
+  const cumulativePlays: Record<string, number> = {};
+  
+  sortedScrobbles.forEach(s => {
+    const date = s.parsedDate!;
+    const dayKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    
+    // Actualizar plays acumulados
+    cumulativePlays[s.artist] = (cumulativePlays[s.artist] || 0) + 1;
+    
+    // Encontrar el Top 5 de ese día
+    const top5 = Object.entries(cumulativePlays)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([artist]) => artist);
+    
+    dailyTop5[dayKey] = top5;
+  });
+
+  // Contar días en Top 5 para cada artista
+  const daysInTop5: Record<string, number> = {};
+  Object.values(dailyTop5).forEach(top5Artists => {
+    top5Artists.forEach(artist => {
+      daysInTop5[artist] = (daysInTop5[artist] || 0) + 1;
+    });
+  });
+
+  // Obtener total de plays
+  const totalPlays: Record<string, number> = {};
+  scrobbles.forEach(s => {
+    totalPlays[s.artist] = (totalPlays[s.artist] || 0) + 1;
+  });
+
+  // Determinar quiénes están en el Top 5 actual
+  const allDays = Object.keys(dailyTop5).sort();
+  const currentTop5 = allDays.length > 0 ? dailyTop5[allDays[allDays.length - 1]] : [];
+
+  console.log('📊 Top 5 Ranking Debug:');
+  console.log('Current Top 5:', currentTop5);
+  console.log('Days in Top 5:', daysInTop5);
+
+  return Object.entries(daysInTop5)
+    .filter(([artist, days]) => days >= 3) // Solo artistas con 3+ días en Top 5
+    .map(([artist, days]) => ({
+      artist,
+      daysInTop5: days,
+      totalPlays: totalPlays[artist] || 0,
+      isCurrentlyTop5: currentTop5.includes(artist),
+    }))
+    .sort((a, b) => b.daysInTop5 - a.daysInTop5)
+    .slice(0, 10);
+}
 // NEW: Estadísticas por año
 function calculateYearlyStats(scrobbles: Scrobble[]) {
   const yearlyData: Record<string, any> = {};

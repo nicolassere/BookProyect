@@ -56,6 +56,13 @@ export interface CumulativeRanking {
   isCurrentLeader: boolean;
 }
 
+export interface Top5Ranking {
+  artist: string;
+  daysInTop5: number;
+  totalPlays: number;
+  isCurrentlyTop5: boolean;
+}
+
 export interface DayOfMonthData {
   day: number;
   count: number;
@@ -86,6 +93,7 @@ export interface Stats {
   top5Timeline: Top5Timeline[];
   top5MonthlyTimeline: Top5MonthlyTimeline[];
   cumulativeRanking: CumulativeRanking[];
+  top5Ranking: Top5Ranking[];
   yearlyStats: YearlyStats[];
 }
 
