@@ -6,12 +6,48 @@ interface RankingViewProps {
   stats: Stats;
 }
 
-type RankingMode = 'number1' | 'top5';
+type RankingMode = 'number1' | 'top5' | 'top10';
 
 export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
   const [mode, setMode] = useState<RankingMode>('number1');
   
-  const rankings = mode === 'number1' ? stats.cumulativeRanking : stats.top5Ranking;
+  const rankings = mode === 'number1' 
+    ? stats.cumulativeRanking 
+    : mode === 'top5' 
+    ? stats.top5Ranking 
+    : stats.top10Ranking;
+
+  const getModeLabel = () => {
+    switch (mode) {
+      case 'number1': return 'days as #1';
+      case 'top5': return 'days in top 5';
+      case 'top10': return 'days in top 10';
+    }
+  };
+
+  const getDaysCount = (item: any) => {
+    switch (mode) {
+      case 'number1': return item.daysAsNumber1;
+      case 'top5': return item.daysInTop5;
+      case 'top10': return item.daysInTop10;
+    }
+  };
+
+  const isCurrentLeader = (item: any) => {
+    switch (mode) {
+      case 'number1': return item.isCurrentLeader;
+      case 'top5': return item.isCurrentlyTop5;
+      case 'top10': return item.isCurrentlyTop10;
+    }
+  };
+
+  const getCurrentLabel = () => {
+    switch (mode) {
+      case 'number1': return 'Current #1';
+      case 'top5': return 'Current Top 5';
+      case 'top10': return 'Current Top 10';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -44,12 +80,24 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
             >
               Days in Top 5
             </button>
+            <button
+              onClick={() => setMode('top10')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                mode === 'top10'
+                  ? 'bg-yellow-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Days in Top 10
+            </button>
           </div>
         </div>
         <p className="text-gray-600">
           {mode === 'number1' 
             ? 'Total days each artist has been your #1 most played (Djokovic-style)'
-            : 'Total days each artist has been in your Top 5 most played'
+            : mode === 'top5'
+            ? 'Total days each artist has been in your Top 5 most played'
+            : 'Total days each artist has been in your Top 10 most played'
           }
         </p>
       </div>
@@ -62,12 +110,8 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {rankings.map((item, index) => {
-            const isCurrentLeader = mode === 'number1' 
-              ? (item as any).isCurrentLeader 
-              : (item as any).isCurrentlyTop5;
-            const daysCount = mode === 'number1'
-              ? (item as any).daysAsNumber1
-              : (item as any).daysInTop5;
+            const currentLeader = isCurrentLeader(item);
+            const daysCount = getDaysCount(item);
 
             return (
               <div 
@@ -100,10 +144,10 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                       <h3 className="text-xl font-bold text-gray-900 truncate">
                         {item.artist}
                       </h3>
-                      {isCurrentLeader && (
+                      {currentLeader && (
                         <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
                           <Star className="w-3 h-3" />
-                          {mode === 'number1' ? 'Current #1' : 'Current Top 5'}
+                          {getCurrentLabel()}
                         </span>
                       )}
                     </div>
@@ -118,7 +162,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                       {daysCount}
                     </div>
                     <div className="text-sm text-gray-600 font-medium">
-                      {mode === 'number1' ? 'days as #1' : 'days in top 5'}
+                      {getModeLabel()}
                     </div>
                   </div>
                 </div>
@@ -134,7 +178,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                         'bg-gradient-to-r from-blue-400 to-blue-600'
                       }`}
                       style={{ 
-                        width: `${(daysCount / rankings[0][(mode === 'number1' ? 'daysAsNumber1' : 'daysInTop5') as keyof typeof rankings[0]]) * 100}%` 
+                        width: `${(daysCount / getDaysCount(rankings[0])) * 100}%` 
                       }}
                     ></div>
                   </div>
@@ -157,10 +201,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
               {rankings[0]?.artist || '-'}
             </p>
             <p className="text-sm text-gray-600">
-              {mode === 'number1' 
-                ? `${(rankings[0] as any)?.daysAsNumber1 || 0} days at #1`
-                : `${(rankings[0] as any)?.daysInTop5 || 0} days in top 5`
-              }
+              {getDaysCount(rankings[0])} {getModeLabel()}
             </p>
           </div>
           
@@ -173,7 +214,12 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
               {rankings.length}
             </p>
             <p className="text-sm text-gray-600">
-              {mode === 'number1' ? 'Different #1 artists' : 'Different top 5 artists'}
+              {mode === 'number1' 
+                ? 'Different #1 artists' 
+                : mode === 'top5'
+                ? 'Different top 5 artists'
+                : 'Different top 10 artists'
+              }
             </p>
           </div>
           
@@ -183,11 +229,10 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
               <h3 className="font-semibold text-gray-900">Dominance</h3>
             </div>
             <p className="text-2xl font-bold text-gray-900 mb-1">
-              {rankings[0] ? (
-                mode === 'number1'
-                  ? (((rankings[0] as any).daysAsNumber1 / rankings.reduce((sum, r) => sum + (r as any).daysAsNumber1, 0)) * 100).toFixed(1)
-                  : (((rankings[0] as any).daysInTop5 / rankings.reduce((sum, r) => sum + (r as any).daysInTop5, 0)) * 100).toFixed(1)
-              ) : 0}%
+              {rankings[0] 
+                ? ((getDaysCount(rankings[0]) / rankings.reduce((sum, r) => sum + getDaysCount(r), 0)) * 100).toFixed(1)
+                : 0
+              }%
             </p>
             <p className="text-sm text-gray-600">of total days</p>
           </div>

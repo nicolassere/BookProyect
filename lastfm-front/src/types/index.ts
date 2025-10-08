@@ -63,6 +63,13 @@ export interface Top5Ranking {
   isCurrentlyTop5: boolean;
 }
 
+export interface Top10Ranking {
+  artist: string;
+  daysInTop10: number;
+  totalPlays: number;
+  isCurrentlyTop10: boolean;
+}
+
 export interface DayOfMonthData {
   day: number;
   count: number;
@@ -94,6 +101,7 @@ export interface Stats {
   top5MonthlyTimeline: Top5MonthlyTimeline[];
   cumulativeRanking: CumulativeRanking[];
   top5Ranking: Top5Ranking[];
+  top10Ranking: Top10Ranking[];
   yearlyStats: YearlyStats[];
 }
 
