@@ -1,8 +1,8 @@
 import type { Scrobble, Stats } from '../types';
 import { calculateCumulativeRanking } from './rankings';
 
-// FIXED: Parseo robusto para TODOS los formatos posibles
-const parseDate = (dateStr: string, timestamp?: string): Date | null => {
+// OPTIMIZATION: Export parseDate so it can be used during upload
+export const parseDate = (dateStr: string, timestamp?: string): Date | null => {
   if (!dateStr || dateStr === 'Now Playing') return null;
   
   try {
@@ -21,7 +21,7 @@ const parseDate = (dateStr: string, timestamp?: string): Date | null => {
       return date;
     }
     
-    // Formato "DD MMM YYYY, HH:mm" - MEJORADO
+    // Formato "DD MMM YYYY, HH:mm"
     const match1 = dateStr.match(/(\d+)\s+(\w+)\s+(\d{4})[,\s]+(\d+):(\d+)/);
     if (match1) {
       const months: Record<string, number> = {
@@ -78,11 +78,12 @@ export const calculateStats = (
 ): Stats | null => {
   if (scrobbles.length === 0) return null;
 
-  // Filtrar por rango de fechas
+  // OPTIMIZATION: Use pre-parsed dates from upload
+  // Filter by date range
   let filtered = scrobbles;
   if (startDate || endDate) {
     filtered = scrobbles.filter(s => {
-      const date = parseDate(s.date, s.timestamp);
+      const date = s.parsedDate; // ⚡ USE PRE-PARSED DATE!
       if (!date) return false;
       if (startDate && date < startDate) return false;
       if (endDate && date > endDate) return false;
@@ -92,38 +93,66 @@ export const calculateStats = (
 
   if (filtered.length === 0) return null;
 
-  // Artist counts
-  const artistCounts: Record<string, number> = {};
-  filtered.forEach(s => {
-    artistCounts[s.artist] = (artistCounts[s.artist] || 0) + 1;
-  });
-  const topArtists = Object.entries(artistCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([artist, count]) => ({ artist, count }));
-
-  // Song counts
-  const songCounts: Record<string, number> = {};
-  filtered.forEach(s => {
-    const key = `${s.artist} - ${s.song}`;
-    songCounts[key] = (songCounts[key] || 0) + 1;
-  });
-  const topSongs = Object.entries(songCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([song, count]) => ({ song, count }));
-
-  // FIXED: Hourly data
+  // OPTIMIZATION: Use Map instead of objects for better performance
+  const artistCounts = new Map<string, number>();
+  const songCounts = new Map<string, number>();
+  const albumCounts = new Map<string, number>();
   const hourCounts = new Array(24).fill(0);
+  const dayCounts = new Array(7).fill(0);
+  const dayOfMonthCounts = new Array(31).fill(0);
+
+  // OPTIMIZATION: Single pass through data to collect all counts
   filtered.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
+    // Artist counts
+    artistCounts.set(s.artist, (artistCounts.get(s.artist) || 0) + 1);
+    
+    // Song counts
+    const songKey = `${s.artist} - ${s.song}`;
+    songCounts.set(songKey, (songCounts.get(songKey) || 0) + 1);
+    
+    // Album counts
+    if (s.album && s.album.trim()) {
+      const albumKey = `${s.artist} - ${s.album}`;
+      albumCounts.set(albumKey, (albumCounts.get(albumKey) || 0) + 1);
+    }
+    
+    // Hour, day, day of month - using pre-parsed date
+    const date = s.parsedDate;
     if (date) {
       const hour = date.getHours();
       if (!isNaN(hour) && hour >= 0 && hour < 24) {
         hourCounts[hour]++;
       }
+      
+      const day = date.getDay();
+      if (!isNaN(day) && day >= 0 && day < 7) {
+        dayCounts[day]++;
+      }
+      
+      const dayOfMonth = date.getDate();
+      if (!isNaN(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= 31) {
+        dayOfMonthCounts[dayOfMonth - 1]++;
+      }
     }
   });
+
+  // Convert Maps to sorted arrays
+  const topArtists = Array.from(artistCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([artist, count]) => ({ artist, count }));
+
+  const topSongs = Array.from(songCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([song, count]) => ({ song, count }));
+
+  const topAlbums = Array.from(albumCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([album, count]) => ({ album, count }));
+
+  // Hourly data
   const hourlyData = hourCounts.map((count, hour) => ({
     hour: `${hour.toString().padStart(2, '0')}:00`,
     count,
@@ -131,60 +160,24 @@ export const calculateStats = (
 
   // Daily data
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dayCounts = new Array(7).fill(0);
-  filtered.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
-    if (date) {
-      const day = date.getDay();
-      if (!isNaN(day) && day >= 0 && day < 7) {
-        dayCounts[day]++;
-      }
-    }
-  });
   const dailyData = dayCounts.map((count, day) => ({
     day: dayNames[day],
     count,
   }));
-  // Day of month data (1-31)
-  const dayOfMonthCounts = new Array(31).fill(0);
-  filtered.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
-    if (date) {
-      const dayOfMonth = date.getDate(); // 1-31
-      if (!isNaN(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= 31) {
-        dayOfMonthCounts[dayOfMonth - 1]++;
-      }
-    }
-  });
+
+  // Day of month data
   const dayOfMonthData = dayOfMonthCounts.map((count, index) => ({
     day: index + 1,
     count,
   }));
 
-  // Album counts
-  const albumCounts: Record<string, number> = {};
-  filtered.forEach(s => {
-    if (s.album && s.album.trim()) {
-      const key = `${s.artist} - ${s.album}`;
-      albumCounts[key] = (albumCounts[key] || 0) + 1;
-    }
-  });
-  const topAlbums = Object.entries(albumCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([album, count]) => ({ album, count }));
-
-
-
-    
-
-  // Evolution, timeline y nuevas stats
+  // Complex calculations
   const artistEvolution = calculateArtistEvolution(filtered, topArtists.slice(0, 5).map(a => a.artist));
   const top5Timeline = calculateTop5Timeline(filtered);
-  const top5MonthlyTimeline = calculateTop5MonthlyTimeline(filtered); // NEW
-  const yearlyStats = calculateYearlyStats(filtered); // NEW
+  const top5MonthlyTimeline = calculateTop5MonthlyTimeline(filtered);
+  const yearlyStats = calculateYearlyStats(filtered);
   
-// Rankings (artists, songs, albums)
+  // Rankings
   const rankings = {
     artists: {
       top1: calculateCumulativeRanking(filtered, (s) => s.artist, 1),
@@ -202,6 +195,7 @@ export const calculateStats = (
       top10: calculateCumulativeRanking(filtered, (s) => `${s.artist} - ${s.album}`, 10),
     },
   };
+
   return {
     total: filtered.length,
     topArtists,
@@ -210,8 +204,8 @@ export const calculateStats = (
     dailyData,
     dayOfMonthData,
     topAlbums,
-    uniqueArtists: Object.keys(artistCounts).length,
-    uniqueSongs: Object.keys(songCounts).length,
+    uniqueArtists: artistCounts.size,
+    uniqueSongs: songCounts.size,
     artistEvolution,
     top5Timeline,
     top5MonthlyTimeline,
@@ -225,7 +219,7 @@ function calculateArtistEvolution(scrobbles: Scrobble[], topArtists: string[]) {
   const monthlyData: Record<string, Record<string, number>> = {};
   
   scrobbles.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
+    const date = s.parsedDate; // ⚡ USE PRE-PARSED DATE!
     if (!date) return;
     
     const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -252,7 +246,7 @@ function calculateTop5Timeline(scrobbles: Scrobble[]) {
   const dayArtistCounts: Record<string, Record<string, number>> = {};
   
   scrobbles.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
+    const date = s.parsedDate; // ⚡ USE PRE-PARSED DATE!
     if (!date) return;
     
     const dayKey = date.toISOString().split('T')[0];
@@ -289,13 +283,13 @@ function calculateTop5Timeline(scrobbles: Scrobble[]) {
     .slice(0, 5);
 }
 
-// NEW: Timeline por MESES
+// Timeline por MESES
 function calculateTop5MonthlyTimeline(scrobbles: Scrobble[]) {
   const monthlyTopArtist: Record<string, string> = {};
   const monthArtistCounts: Record<string, Record<string, number>> = {};
   
   scrobbles.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
+    const date = s.parsedDate; // ⚡ USE PRE-PARSED DATE!
     if (!date) return;
     
     const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -332,15 +326,12 @@ function calculateTop5MonthlyTimeline(scrobbles: Scrobble[]) {
     .slice(0, 5);
 }
 
-
-
-
-// NEW: Estadísticas por año
+// Estadísticas por año
 function calculateYearlyStats(scrobbles: Scrobble[]) {
   const yearlyData: Record<string, any> = {};
   
   scrobbles.forEach(s => {
-    const date = parseDate(s.date, s.timestamp);
+    const date = s.parsedDate; // ⚡ USE PRE-PARSED DATE!
     if (!date) return;
     
     const year = date.getFullYear().toString();
@@ -383,8 +374,8 @@ function calculateYearlyStats(scrobbles: Scrobble[]) {
 
 export const getDateRange = (scrobbles: Scrobble[]) => {
   const dates = scrobbles
-    .map(s => parseDate(s.date, s.timestamp))
-    .filter(d => d !== null) as Date[];
+    .map(s => s.parsedDate) // ⚡ USE PRE-PARSED DATE!
+    .filter(d => d !== null && d !== undefined) as Date[];
   
   if (dates.length === 0) return { min: '', max: '' };
   
@@ -395,4 +386,4 @@ export const getDateRange = (scrobbles: Scrobble[]) => {
     min: min.toISOString().split('T')[0],
     max: max.toISOString().split('T')[0],
   };
-};
+}

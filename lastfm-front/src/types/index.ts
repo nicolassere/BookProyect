@@ -5,6 +5,7 @@ export interface Scrobble {
   date: string;
   url?: string;
   timestamp?: string;
+  parsedDate?: Date | null; // NEW: Pre-parsed date for performance
 }
 
 export interface ArtistCount {
@@ -130,8 +131,6 @@ export interface Stats {
   rankings: Rankings;
   yearlyStats: YearlyStats[];
 }
-
-
 
 export interface LastFmArtist {
   '#text': string;

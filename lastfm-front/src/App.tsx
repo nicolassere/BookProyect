@@ -2,13 +2,15 @@ import { useState, useMemo, lazy, Suspense } from 'react';
 import { Upload, Music } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Scrobble } from './types';
-import { calculateStats, getDateRange } from './utils/stats';
+import { parseDate } from './utils/stats';
+import { getDateRange } from './utils/stats';
+import { useStats } from './utils/useStats';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DateFilters } from './components/DateFilters';
 import { UploadModal } from './components/UploadModal';
 
-// Lazy load views para mejor performance
+// Lazy load views
 const OverviewView = lazy(() => import('./views/OverviewView').then(m => ({ default: m.OverviewView })));
 const RankingView = lazy(() => import('./views/RankingView').then(m => ({ default: m.RankingView })));
 const YearsView = lazy(() => import('./views/YearsView').then(m => ({ default: m.YearsView })));
@@ -53,10 +55,8 @@ function App() {
     return { startDate: start, endDate: end };
   }, [datePreset, customStartDate, customEndDate]);
   
-  // Memoize stats calculation
-  const stats = useMemo(() => {
-    return calculateStats(scrobbles, startDate, endDate);
-  }, [scrobbles, startDate, endDate]);
+  // ⚡ LAZY STATS: Solo calcula lo necesario para la vista activa
+  const stats = useStats(scrobbles, startDate, endDate, activeView);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -64,25 +64,31 @@ function App() {
 
     setLoading(true);
     
-    // FIXED: Usar Papaparse para parsing correcto de CSV con comillas
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      worker: true,
       complete: (results) => {
+        console.time('⚡ Process CSV Data');
+        
         const data = results.data
           .filter((row: any) => row.artist && row.song)
-          .map((row: any) => ({
-            artist: row.artist?.trim() || '',
-            song: row.song?.trim() || '',
-            album: row.album?.trim() || '',
-            date: row.date?.trim() || '',
-            timestamp: row.timestamp?.trim() || '',
-            url: row.url?.trim() || ''
-          })) as Scrobble[];
+          .map((row: any) => {
+            const scrobble: Scrobble = {
+              artist: row.artist?.trim() || '',
+              song: row.song?.trim() || '',
+              album: row.album?.trim() || '',
+              date: row.date?.trim() || '',
+              timestamp: row.timestamp?.trim() || '',
+              url: row.url?.trim() || '',
+              parsedDate: parseDate(row.date?.trim() || '', row.timestamp?.trim() || '')
+            };
+            return scrobble;
+          });
         
+        console.timeEnd('⚡ Process CSV Data');
         console.log('📊 Loaded scrobbles:', data.length);
-        console.log('🔍 Sample date:', data[0]?.date);
-        console.log('🔍 Sample timestamp:', data[0]?.timestamp);
+        console.log('🔍 Sample:', data[0]);
         
         setScrobbles(data);
         setLoading(false);
@@ -123,7 +129,8 @@ function App() {
         song: songs[artistIndex],
         album: `Album ${artistIndex + 1}`,
         date: dateStr,
-        timestamp: Math.floor(date.getTime() / 1000).toString()
+        timestamp: Math.floor(date.getTime() / 1000).toString(),
+        parsedDate: date
       });
     }
     

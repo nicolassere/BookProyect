@@ -1,62 +1,5 @@
 import type { Scrobble } from '../types';
 
-// Función genérica para parsear fechas (copia de stats.ts)
-const parseDate = (dateStr: string, timestamp?: string): Date | null => {
-  if (!dateStr || dateStr === 'Now Playing') return null;
-  
-  try {
-    let date = new Date(dateStr);
-    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
-      return date;
-    }
-    
-    const match1 = dateStr.match(/(\d+)\s+(\w+)\s+(\d{4})[,\s]+(\d+):(\d+)/);
-    if (match1) {
-      const months: Record<string, number> = {
-        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11,
-        'Ene': 0, 'Abr': 3, 'Ago': 7, 'Dic': 11,
-        'Jan.': 0, 'Feb.': 1, 'Mar.': 2, 'Apr.': 3, 'May.': 4, 'Jun.': 5,
-        'Jul.': 6, 'Aug.': 7, 'Sep.': 8, 'Oct.': 9, 'Nov.': 10, 'Dec.': 11
-      };
-      const month = months[match1[2]];
-      if (month !== undefined) {
-        date = new Date(
-          parseInt(match1[3]), 
-          month, 
-          parseInt(match1[1]), 
-          parseInt(match1[4]), 
-          parseInt(match1[5])
-        );
-        if (!isNaN(date.getTime())) return date;
-      }
-    }
-    
-    const match2 = dateStr.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
-    if (match2) {
-      date = new Date(
-        parseInt(match2[1]),
-        parseInt(match2[2]) - 1,
-        parseInt(match2[3]),
-        parseInt(match2[4]),
-        parseInt(match2[5]),
-        parseInt(match2[6])
-      );
-      if (!isNaN(date.getTime())) return date;
-    }
-    
-    const timestamp2 = parseInt(dateStr);
-    if (!isNaN(timestamp2) && timestamp2 > 1000000000) {
-      date = new Date(timestamp2 * 1000);
-      if (!isNaN(date.getTime())) return date;
-    }
-    
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 interface RankingItem {
   name: string;
   daysInTop: number;
@@ -64,87 +7,135 @@ interface RankingItem {
   isCurrentlyTop: boolean;
 }
 
-/**
- * Calcula el ranking acumulado genérico
- * @param scrobbles - Lista de scrobbles
- * @param getKey - Función para extraer la clave (artist, song, album)
- * @param topN - Tamaño del top (1, 5, 10, etc.)
- * @param minDays - Mínimo de días requeridos (default 3)
- */
 export const calculateCumulativeRanking = (
   scrobbles: Scrobble[],
   getKey: (scrobble: Scrobble) => string,
   topN: number,
   minDays: number = 3
 ): RankingItem[] => {
+  console.log('🔍 STARTING RANKING CALCULATION');
+  console.log('📊 Total scrobbles:', scrobbles.length);
+  console.log('🎯 Top N:', topN);
+  console.log('⏰ Min days:', minDays);
+  
   if (scrobbles.length === 0) return [];
+
+  // Check fechas parseadas
+  const withDates = scrobbles.filter(s => s.parsedDate);
+  console.log('✅ Scrobbles with parsedDate:', withDates.length);
+  
+  if (withDates.length === 0) {
+    console.error('❌ NO HAY FECHAS PARSEADAS!');
+    return [];
+  }
+
+  // Verificar muestra de fechas
+  console.log('📅 Sample dates:', withDates.slice(0, 3).map(s => ({
+    date: s.date,
+    parsedDate: s.parsedDate,
+    key: getKey(s)
+  })));
+
+  // Pre-calcular Top 20 por plays totales
+  const totalPlaysMap = new Map<string, number>();
+  scrobbles.forEach(s => {
+    const key = getKey(s);
+    totalPlaysMap.set(key, (totalPlaysMap.get(key) || 0) + 1);
+  });
+
+  console.log('🎵 Total unique items:', totalPlaysMap.size);
+
+  const top20Candidates = Array.from(totalPlaysMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20);
+
+  console.log('🏆 Top 20 candidates:', top20Candidates.map(([k, v]) => `${k}: ${v}`));
+
+  const top20Set = new Set(top20Candidates.map(([k]) => k));
 
   // Ordenar cronológicamente
   const sortedScrobbles = scrobbles
-    .map(s => ({
-      ...s,
-      parsedDate: parseDate(s.date, s.timestamp)
-    }))
-    .filter(s => s.parsedDate !== null)
-    .sort((a, b) => {
-      const dateA = a.parsedDate!;
-      const dateB = b.parsedDate!;
-      return dateA.getTime() - dateB.getTime();
-    });
+    .filter(s => s.parsedDate !== null && s.parsedDate !== undefined)
+    .sort((a, b) => a.parsedDate!.getTime() - b.parsedDate!.getTime());
 
-  if (sortedScrobbles.length === 0) return [];
-
-  // Calcular plays acumulados día por día
-  const dailyTop: Record<string, string[]> = {};
-  const cumulativePlays: Record<string, number> = {};
+  // Agrupar por día
+  const scrobblesByDay = new Map<string, Scrobble[]>();
   
   sortedScrobbles.forEach(s => {
     const date = s.parsedDate!;
-    const dayKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-    const key = getKey(s);
+    const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
+    if (!scrobblesByDay.has(dayKey)) {
+      scrobblesByDay.set(dayKey, []);
+    }
+    scrobblesByDay.get(dayKey)!.push(s);
+  });
+
+  console.log('📅 Total unique days:', scrobblesByDay.size);
+  
+  const sortedDays = Array.from(scrobblesByDay.keys()).sort();
+  console.log('📅 Date range:', sortedDays[0], 'to', sortedDays[sortedDays.length - 1]);
+
+  // Procesar día por día
+  const dailyTop = new Map<string, string[]>();
+  const cumulativePlays = new Map<string, number>();
+  
+  sortedDays.forEach(dayKey => {
+    const dayScrobbles = scrobblesByDay.get(dayKey)!;
     
     // Actualizar plays acumulados
-    cumulativePlays[key] = (cumulativePlays[key] || 0) + 1;
+    dayScrobbles.forEach(s => {
+      const key = getKey(s);
+      if (top20Set.has(key)) { // Solo trackear Top 20
+        cumulativePlays.set(key, (cumulativePlays.get(key) || 0) + 1);
+      }
+    });
     
-    // Encontrar el Top N de ese día
-    const topNItems = Object.entries(cumulativePlays)
+    // Calcular Top N del día
+    const topNItems = Array.from(cumulativePlays.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, topN)
       .map(([itemKey]) => itemKey);
     
-    dailyTop[dayKey] = topNItems;
+    dailyTop.set(dayKey, topNItems);
   });
 
-  // Contar días en Top N para cada item
-  const daysInTop: Record<string, number> = {};
-  Object.values(dailyTop).forEach(topItems => {
+  console.log('📊 Days with top N calculated:', dailyTop.size);
+
+  // Contar días en Top N
+  const daysInTop = new Map<string, number>();
+  
+  dailyTop.forEach((topItems) => {
     topItems.forEach(item => {
-      daysInTop[item] = (daysInTop[item] || 0) + 1;
+      daysInTop.set(item, (daysInTop.get(item) || 0) + 1);
     });
   });
 
-  // Obtener total de plays
-  const totalPlays: Record<string, number> = {};
-  scrobbles.forEach(s => {
-    const key = getKey(s);
-    totalPlays[key] = (totalPlays[key] || 0) + 1;
-  });
+  console.log('🎯 Items with days in top:', Array.from(daysInTop.entries()).map(([k, v]) => `${k}: ${v} days`));
 
-  // Determinar el Top N actual
-  const allDays = Object.keys(dailyTop).sort();
-  const currentTop = allDays.length > 0 ? dailyTop[allDays[allDays.length - 1]] : [];
+  // Obtener el Top N actual
+  const currentTop = sortedDays.length > 0 ? (dailyTop.get(sortedDays[sortedDays.length - 1]) || []) : [];
 
-  return Object.entries(daysInTop)
-    .filter(([item, days]) => days >= minDays)
+  // Construir resultado
+  const results = Array.from(daysInTop.entries())
+    .filter(([item, days]) => {
+      const passes = days >= minDays;
+      if (!passes) {
+        console.log(`⏭️ Filtering out ${item}: ${days} days < ${minDays} minDays`);
+      }
+      return passes;
+    })
     .map(([item, days]) => ({
       name: item,
       daysInTop: days,
-      totalPlays: totalPlays[item] || 0,
+      totalPlays: totalPlaysMap.get(item) || 0,
       isCurrentlyTop: currentTop.includes(item),
     }))
     .sort((a, b) => b.daysInTop - a.daysInTop)
-    .slice(0, 15);
+    .slice(0, 20);
+
+  console.log('✅ FINAL RESULTS:', results.length, 'items');
+  console.log('📋 Results:', results);
+
+  return results;
 };
-
-
-  
