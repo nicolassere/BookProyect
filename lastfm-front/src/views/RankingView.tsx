@@ -1,4 +1,4 @@
-import { Trophy, Crown, Medal, Star } from 'lucide-react';
+import { Trophy, Crown, Medal, Star, Music, Disc } from 'lucide-react';
 import { useState } from 'react';
 import type { Stats } from '../types';
 
@@ -6,69 +6,116 @@ interface RankingViewProps {
   stats: Stats;
 }
 
-type RankingMode = 'number1' | 'top5' | 'top10';
+type RankingMode = 'top1' | 'top5' | 'top10';
+type RankingType = 'artists' | 'songs' | 'albums';
 
 export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
-  const [mode, setMode] = useState<RankingMode>('number1');
+  const [mode, setMode] = useState<RankingMode>('top1');
+  const [type, setType] = useState<RankingType>('artists');
   
-  const rankings = mode === 'number1' 
-    ? stats.cumulativeRanking 
-    : mode === 'top5' 
-    ? stats.top5Ranking 
-    : stats.top10Ranking;
+  const rankings = stats.rankings[type][mode];
 
   const getModeLabel = () => {
     switch (mode) {
-      case 'number1': return 'days as #1';
+      case 'top1': return 'days as #1';
       case 'top5': return 'days in top 5';
       case 'top10': return 'days in top 10';
     }
   };
 
-  const getDaysCount = (item: any) => {
-    switch (mode) {
-      case 'number1': return item.daysAsNumber1;
-      case 'top5': return item.daysInTop5;
-      case 'top10': return item.daysInTop10;
-    }
-  };
-
-  const isCurrentLeader = (item: any) => {
-    switch (mode) {
-      case 'number1': return item.isCurrentLeader;
-      case 'top5': return item.isCurrentlyTop5;
-      case 'top10': return item.isCurrentlyTop10;
-    }
-  };
-
   const getCurrentLabel = () => {
     switch (mode) {
-      case 'number1': return 'Current #1';
+      case 'top1': return 'Current #1';
       case 'top5': return 'Current Top 5';
       case 'top10': return 'Current Top 10';
     }
   };
 
+  const getTypeLabel = () => {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  const getTypeIcon = () => {
+    switch (type) {
+      case 'artists': return Crown;
+      case 'songs': return Music;
+      case 'albums': return Disc;
+    }
+  };
+
+  const TypeIcon = getTypeIcon();
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Crown className="w-8 h-8 text-yellow-600" />
-            <h2 className="text-2xl font-bold text-gray-900">All-Time Cumulative Ranking</h2>
+            <TypeIcon className="w-8 h-8 text-yellow-600" />
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">All-Time Cumulative Ranking</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {mode === 'top1' 
+                  ? `Total days each ${type.slice(0, -1)} has been your #1 most played`
+                  : mode === 'top5'
+                  ? `Total days each ${type.slice(0, -1)} has been in your Top 5`
+                  : `Total days each ${type.slice(0, -1)} has been in your Top 10`
+                }
+              </p>
+            </div>
           </div>
-          
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {/* Type Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setType('artists')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                type === 'artists'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Crown className="w-4 h-4" />
+              Artists
+            </button>
+            <button
+              onClick={() => setType('songs')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                type === 'songs'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Music className="w-4 h-4" />
+              Songs
+            </button>
+            <button
+              onClick={() => setType('albums')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                type === 'albums'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Disc className="w-4 h-4" />
+              Albums
+            </button>
+          </div>
+
+          <div className="w-px bg-gray-300"></div>
+
           {/* Mode Toggle */}
           <div className="flex gap-2">
             <button
-              onClick={() => setMode('number1')}
+              onClick={() => setMode('top1')}
               className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                mode === 'number1'
+                mode === 'top1'
                   ? 'bg-yellow-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Days as #1
+              #1
             </button>
             <button
               onClick={() => setMode('top5')}
@@ -78,7 +125,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Days in Top 5
+              Top 5
             </button>
             <button
               onClick={() => setMode('top10')}
@@ -88,18 +135,10 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Days in Top 10
+              Top 10
             </button>
           </div>
         </div>
-        <p className="text-gray-600">
-          {mode === 'number1' 
-            ? 'Total days each artist has been your #1 most played (Djokovic-style)'
-            : mode === 'top5'
-            ? 'Total days each artist has been in your Top 5 most played'
-            : 'Total days each artist has been in your Top 10 most played'
-          }
-        </p>
       </div>
 
       {rankings.length === 0 ? (
@@ -110,9 +149,6 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {rankings.map((item, index) => {
-            const currentLeader = isCurrentLeader(item);
-            const daysCount = getDaysCount(item);
-
             return (
               <div 
                 key={index}
@@ -138,13 +174,13 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                     )}
                   </div>
 
-                  {/* Info del artista */}
+                  {/* Info del item */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-xl font-bold text-gray-900 truncate">
-                        {item.artist}
+                        {item.name}
                       </h3>
-                      {currentLeader && (
+                      {item.isCurrentlyTop && (
                         <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
                           <Star className="w-3 h-3" />
                           {getCurrentLabel()}
@@ -159,7 +195,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                   {/* Stats de días */}
                   <div className="text-right">
                     <div className="text-4xl font-bold text-gray-900">
-                      {daysCount}
+                      {item.daysInTop}
                     </div>
                     <div className="text-sm text-gray-600 font-medium">
                       {getModeLabel()}
@@ -178,7 +214,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
                         'bg-gradient-to-r from-blue-400 to-blue-600'
                       }`}
                       style={{ 
-                        width: `${(daysCount / getDaysCount(rankings[0])) * 100}%` 
+                        width: `${(item.daysInTop / rankings[0].daysInTop) * 100}%` 
                       }}
                     ></div>
                   </div>
@@ -197,29 +233,24 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
               <Crown className="w-6 h-6 text-yellow-500" />
               <h3 className="font-semibold text-gray-900">Champion</h3>
             </div>
-            <p className="text-2xl font-bold text-gray-900 mb-1">
-              {rankings[0]?.artist || '-'}
+            <p className="text-2xl font-bold text-gray-900 mb-1 truncate">
+              {rankings[0]?.name || '-'}
             </p>
             <p className="text-sm text-gray-600">
-              {getDaysCount(rankings[0])} {getModeLabel()}
+              {rankings[0]?.daysInTop || 0} {getModeLabel()}
             </p>
           </div>
           
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3 mb-3">
               <Trophy className="w-6 h-6 text-blue-500" />
-              <h3 className="font-semibold text-gray-900">Total Artists</h3>
+              <h3 className="font-semibold text-gray-900">Total {getTypeLabel()}</h3>
             </div>
             <p className="text-2xl font-bold text-gray-900 mb-1">
               {rankings.length}
             </p>
             <p className="text-sm text-gray-600">
-              {mode === 'number1' 
-                ? 'Different #1 artists' 
-                : mode === 'top5'
-                ? 'Different top 5 artists'
-                : 'Different top 10 artists'
-              }
+              Different {mode} {type}
             </p>
           </div>
           
@@ -230,7 +261,7 @@ export const RankingView: React.FC<RankingViewProps> = ({ stats }) => {
             </div>
             <p className="text-2xl font-bold text-gray-900 mb-1">
               {rankings[0] 
-                ? ((getDaysCount(rankings[0]) / rankings.reduce((sum, r) => sum + getDaysCount(r), 0)) * 100).toFixed(1)
+                ? ((rankings[0].daysInTop / rankings.reduce((sum, r) => sum + r.daysInTop, 0)) * 100).toFixed(1)
                 : 0
               }%
             </p>

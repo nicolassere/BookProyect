@@ -75,6 +75,31 @@ export interface DayOfMonthData {
   count: number;
 }
 
+export interface RankingItem {
+  name: string;
+  daysInTop: number;
+  totalPlays: number;
+  isCurrentlyTop: boolean;
+}
+
+export interface Rankings {
+  artists: {
+    top1: RankingItem[];
+    top5: RankingItem[];
+    top10: RankingItem[];
+  };
+  songs: {
+    top1: RankingItem[];
+    top5: RankingItem[];
+    top10: RankingItem[];
+  };
+  albums: {
+    top1: RankingItem[];
+    top5: RankingItem[];
+    top10: RankingItem[];
+  };
+}
+
 export interface YearlyStats {
   year: string;
   totalScrobbles: number;
@@ -102,8 +127,11 @@ export interface Stats {
   cumulativeRanking: CumulativeRanking[];
   top5Ranking: Top5Ranking[];
   top10Ranking: Top10Ranking[];
+  rankings: Rankings;
   yearlyStats: YearlyStats[];
 }
+
+
 
 export interface LastFmArtist {
   '#text': string;
