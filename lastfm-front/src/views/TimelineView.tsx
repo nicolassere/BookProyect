@@ -81,14 +81,16 @@ export const TimelineView = memo<TimelineViewProps>(({ stats }) => {
 
   // OPTIMIZATION: Memoize timeline data selection
   const { timelineData, maxValue } = useMemo(() => {
-    const data = mode === 'days' 
+    const data = mode === 'days'
       ? (stats.top5Timeline || []).slice(0, topN)
       : (stats.top5MonthlyTimeline || []).slice(0, topN);
-    
-    const max = data.length > 0 
-      ? (data[0].daysAsTop || data[0].monthsAsTop || 1)
+
+    const max = data.length > 0
+      ? (mode === 'days'
+          ? (data[0] as any).daysAsTop || 1
+          : (data[0] as any).monthsAsTop || 1)
       : 1;
-    
+
     return { timelineData: data, maxValue: max };
   }, [mode, topN, stats.top5Timeline, stats.top5MonthlyTimeline]);
 

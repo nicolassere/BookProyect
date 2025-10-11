@@ -209,6 +209,9 @@ export const calculateStats = (
     artistEvolution,
     top5Timeline,
     top5MonthlyTimeline,
+    cumulativeRanking: [],
+    top5Ranking: [],
+    top10Ranking: [],
     rankings,
     yearlyStats,
   };
