@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
-import { Upload, Music } from 'lucide-react';
+import { Music } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Scrobble } from './types';
 import { parseDate } from './utils/stats';
@@ -138,16 +138,19 @@ function App() {
   };
 
   const LoadingSpinner = () => (
-    <div className="flex items-center justify-center py-32">
+    <div className="flex items-center justify-center py-32 animate-fade-in">
       <div className="text-center">
-        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading...</p>
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-primary-200 rounded-full mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto absolute top-0 left-1/2 -translate-x-1/2"></div>
+        </div>
+        <p className="text-gray-600 font-medium">Loading...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
       <Header onUpload={() => setShowUploadModal(true)} onDemo={demoData} />
 
       {stats && (
@@ -169,30 +172,35 @@ function App() {
         {loading && <LoadingSpinner />}
 
         {!stats && !loading && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Music className="w-10 h-10 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                Welcome to Last.fm Analytics
-              </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Import your Last.fm scrobble data to visualize your listening habits
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Import CSV File
-                </button>
-                <button
-                  onClick={demoData}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Try Demo Data
-                </button>
+          <div className="max-w-2xl mx-auto animate-scale-in">
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-12 text-center overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-100/50 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-100/50 to-transparent rounded-full translate-y-24 -translate-x-24"></div>
+
+              <div className="relative z-10">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary-200 transform hover:scale-110 transition-transform duration-300">
+                  <Music className="w-10 h-10 text-gray" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                  Welcome to Last.fm Analytics
+                </h2>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+                  Import your Last.fm scrobble data to visualize your listening habits and discover insights about your music taste
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="px-8 py-3.5 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-medium transform hover:-translate-y-0.5"
+                  >
+                    Import CSV File
+                  </button>
+                  <button
+                    onClick={demoData}
+                    className="px-8 py-3.5 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-medium transform hover:-translate-y-0.5"
+                  >
+                    Try Demo Data
+                  </button>
+                </div>
               </div>
             </div>
           </div>
