@@ -55,7 +55,7 @@ const RankingCard = memo(({
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-black-600 dark:text-gray-400">
             <CountUp end={item.totalPlays} suffix=" total plays" />
           </p>
         </div>
