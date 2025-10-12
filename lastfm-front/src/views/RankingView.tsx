@@ -33,10 +33,10 @@ const RankingCard = memo(({
   return (
     <div 
       className={`glass dark:glass-dark rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-md card-3d animate-fade-in-up ${
-        index === 0 ? 'border-yellow-400 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-transparent' :
-        index === 1 ? 'border-gray-400 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-transparent' :
-        index === 2 ? 'border-orange-400 bg-gradient-to-r from-orange-50 to-white dark:from-orange-900/20 dark:to-transparent' :
-        'border-gray-200 dark:border-gray-700'
+        index === 0 ? 'border-yellow-500 bg-gradient-to-r from-yellow-100 to-yellow-50 dark:from-yellow-900/30 dark:to-black-800' :
+        index === 1 ? 'border-black-500 bg-gradient-to-r from-black-100 to-black-50 dark:from-black-900/50 dark:to-black-800' :
+        index === 2 ? 'border-orange-500 bg-gradient-to-r from-orange-100 to-orange-50 dark:from-orange-900/30 dark:to-black-800' :
+        'border-black-300 dark:border-black-600'
       }`}
       style={{ animationDelay: `${index * 0.05}s` }}
     >
@@ -45,33 +45,33 @@ const RankingCard = memo(({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+            <h3 className="text-xl font-bold text-black-950 dark:text-black-50 truncate">
               {item.name}
             </h3>
             {item.isCurrentlyTop && (
-              <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full flex items-center gap-1 animate-pulse-soft">
+              <span className="px-2 py-1 bg-green-200 dark:bg-green-900/40 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full flex items-center gap-1 animate-pulse-soft">
                 <Star className="w-3 h-3 fill-current" />
                 {getCurrentLabel()}
               </span>
             )}
           </div>
-          <p className="text-sm text-black-600 dark:text-gray-400">
+          <p className="text-sm text-black-700 dark:text-black-300">
             <CountUp end={item.totalPlays} suffix=" total plays" />
           </p>
         </div>
 
         <div className="text-right">
-          <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="text-4xl font-bold text-black-950 dark:text-black-50">
             <CountUp end={item.daysInTop} duration={800} />
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+          <div className="text-sm text-black-700 dark:text-black-300 font-medium">
             {getModeLabel()}
           </div>
         </div>
       </div>
 
       <div className="mt-4">
-        <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+        <div className="bg-black-300 dark:bg-black-600 rounded-full h-3 overflow-hidden">
           <div 
             className="h-full rounded-full transition-all duration-500"
             style={{ 
@@ -217,14 +217,14 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="glass dark:glass-dark rounded-xl p-6 border border-yellow-200 dark:border-yellow-800">
+        <div className="glass dark:glass-dark rounded-xl p-6 border border-yellow-300 dark:border-yellow-700">
           <div className="flex items-center justify-center gap-3 py-12">
-            <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-blue-700 dark:text-blue-300 animate-spin" />
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-2xl font-bold text-black-950 dark:text-black-50">
                 Calculating Rankings...
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-black-700 dark:text-black-300 mt-1">
                 {getPeriodLabel()} - Top {mode === 'top1' ? '1' : mode === 'top5' ? '5' : '10'}
               </p>
             </div>
@@ -237,15 +237,15 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="glass dark:glass-dark rounded-xl p-6 border border-yellow-200 dark:border-yellow-800">
+      <div className="glass dark:glass-dark rounded-xl p-6 border border-yellow-300 dark:border-yellow-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <TypeIcon className="w-8 h-8 text-yellow-600 dark:text-yellow-400 animate-bounce-soft" />
+            <TypeIcon className="w-8 h-8 text-yellow-600 dark:text-yellow-300 animate-bounce-soft" />
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-2xl font-bold text-black-950 dark:text-black-50">
                 All-Time Cumulative Ranking
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-black-700 dark:text-black-300 mt-1">
                 {mode === 'top1' 
                   ? `Total days each ${type.slice(0, -1)} has been your #1`
                   : mode === 'top5'
@@ -261,7 +261,7 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
         <div className="flex flex-wrap gap-3">
           {/* Time Period */}
           <div className="flex gap-2 flex-wrap">
-            <span className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+            <span className="flex items-center text-sm font-medium text-black-800 dark:text-black-200 px-2">
               <Calendar className="w-4 h-4 mr-1" />
               Period:
             </span>
@@ -271,8 +271,8 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
                 onClick={() => setTimePeriod(p)}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   timePeriod === p 
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' 
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    ? 'bg-gradient-to-r from-purple-700 to-pink-700 text-white shadow-md' 
+                    : 'bg-black-50 dark:bg-black-700 text-black-800 dark:text-black-200 hover:bg-black-100 dark:hover:bg-black-600'
                 }`}
               >
                 {p === 'alltime' ? 'All Time' :
@@ -283,7 +283,7 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
             ))}
           </div>
 
-          <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px bg-black-400 dark:bg-black-500"></div>
 
           {/* Type */}
           <div className="flex gap-2">
@@ -292,7 +292,7 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
                 key={t}
                 onClick={() => setType(t as RankingType)}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                  type === t ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  type === t ? 'bg-blue-700 text-white shadow-md' : 'bg-black-50 dark:bg-black-700 text-black-800 dark:text-black-200 hover:bg-black-100 dark:hover:bg-black-600'
                 }`}
               >
                 {t === 'artists' && <Crown className="w-4 h-4" />}
@@ -303,7 +303,7 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
             ))}
           </div>
 
-          <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px bg-black-400 dark:bg-black-500"></div>
 
           {/* Mode */}
           <div className="flex gap-2">
@@ -312,7 +312,7 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
                 key={m}
                 onClick={() => setMode(m as RankingMode)}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  mode === m ? 'bg-yellow-600 text-white shadow-md' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  mode === m ? 'bg-yellow-700 text-white shadow-md' : 'bg-black-50 dark:bg-black-700 text-black-800 dark:text-black-200 hover:bg-black-100 dark:hover:bg-black-600'
                 }`}
               >
                 {m === 'top1' ? '#1' : m === 'top5' ? 'Top 5' : 'Top 10'}
@@ -323,9 +323,9 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
       </div>
 
       {rankings.length === 0 ? (
-        <div className="glass dark:glass-dark rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
-          <Trophy className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4 animate-float" />
-          <p className="text-gray-500 dark:text-gray-400">No ranking data available for this period</p>
+        <div className="glass dark:glass-dark rounded-xl p-12 text-center border border-black-300 dark:border-black-600">
+          <Trophy className="w-16 h-16 text-black-400 dark:text-black-500 mx-auto mb-4 animate-float" />
+          <p className="text-black-700 dark:text-black-300">No ranking data available for this period</p>
         </div>
       ) : (
         <>
@@ -345,52 +345,52 @@ export const RankingView = memo<RankingViewProps>(({ stats, scrobbles }) => {
 
           {/* Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 card-3d">
+            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-black-200 dark:border-black-600 card-3d">
               <div className="flex items-center gap-3 mb-3">
-                <Crown className="w-6 h-6 text-yellow-500 animate-bounce-soft" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Champion</h3>
+                <Crown className="w-6 h-6 text-yellow-600 animate-bounce-soft" />
+                <h3 className="font-semibold text-black-950 dark:text-black-50">Champion</h3>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 truncate">
+              <p className="text-2xl font-bold text-black-950 dark:text-black-50 mb-1 truncate">
                 {summaryStats.champion?.name || '-'}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-black-700 dark:text-black-300">
                 <CountUp end={summaryStats.champion?.daysInTop || 0} suffix=" days" />
               </p>
             </div>
             
-            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 card-3d">
+            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-black-200 dark:border-black-600 card-3d">
               <div className="flex items-center gap-3 mb-3">
-                <Trophy className="w-6 h-6 text-blue-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Total {getTypeLabel()}</h3>
+                <Trophy className="w-6 h-6 text-blue-600" />
+                <h3 className="font-semibold text-black-950 dark:text-black-50">Total {getTypeLabel()}</h3>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <p className="text-2xl font-bold text-black-950 dark:text-black-50 mb-1">
                 <CountUp end={summaryStats.totalRankings} />
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-black-700 dark:text-black-300">
                 Different {mode} {type}
               </p>
             </div>
             
-            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 card-3d">
+            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-black-200 dark:border-black-600 card-3d">
               <div className="flex items-center gap-3 mb-3">
-                <Medal className="w-6 h-6 text-emerald-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Dominance</h3>
+                <Medal className="w-6 h-6 text-emerald-600" />
+                <h3 className="font-semibold text-black-950 dark:text-black-50">Dominance</h3>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <p className="text-2xl font-bold text-black-950 dark:text-black-50 mb-1">
                 {summaryStats.dominancePercent}%
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">of total days</p>
+              <p className="text-sm text-black-700 dark:text-black-300">of total days</p>
             </div>
 
-            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 card-3d">
+            <div className="glass dark:glass-dark rounded-xl p-6 shadow-sm border border-black-200 dark:border-black-600 card-3d">
               <div className="flex items-center gap-3 mb-3">
-                <Calendar className="w-6 h-6 text-purple-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Total Days</h3>
+                <Calendar className="w-6 h-6 text-purple-600" />
+                <h3 className="font-semibold text-black-950 dark:text-black-50">Total Days</h3>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <p className="text-2xl font-bold text-black-950 dark:text-black-50 mb-1">
                 <CountUp end={summaryStats.totalDays} />
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{getPeriodLabel()}</p>
+              <p className="text-sm text-black-700 dark:text-black-300">{getPeriodLabel()}</p>
             </div>
           </div>
         </>
