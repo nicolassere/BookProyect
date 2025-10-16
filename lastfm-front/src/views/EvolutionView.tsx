@@ -55,8 +55,8 @@ export const EvolutionView = memo<EvolutionViewProps>(({ scrobbles }) => {
   if (isCalculating) {
     return (
       <div className="space-y-6">
-        <div className="glass dark:glass-dark rounded-xl p-6 border border-blue-300 dark:border-blue-700">
-          <div className="flex items-center justify-center gap-3 py-12">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+          <div className="flex items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -75,7 +75,7 @@ export const EvolutionView = memo<EvolutionViewProps>(({ scrobbles }) => {
   if (!evolutionStats || availableYears.length < 2) {
     return (
       <div className="space-y-6">
-        <div className="glass dark:glass-dark rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <TrendingUp className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             Not Enough Data
@@ -93,15 +93,17 @@ export const EvolutionView = memo<EvolutionViewProps>(({ scrobbles }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="glass dark:glass-dark rounded-xl p-6 border border-blue-300 dark:border-blue-700">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-bounce-soft" />
+            <div className="p-2.5 rounded-lg bg-blue-500">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                 Evolution Analysis
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                 Year-over-year changes, breakthroughs, and consistency
               </p>
             </div>
@@ -109,70 +111,72 @@ export const EvolutionView = memo<EvolutionViewProps>(({ scrobbles }) => {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap gap-3">
-          {/* Year selector */}
-          <div className="flex gap-2 items-center flex-wrap">
-            <span className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
-              <Calendar className="w-4 h-4 mr-1" />
-              Compare:
-            </span>
-            {availableYears.slice(0, 5).map(year => (
+        <div className="px-6 py-4">
+          <div className="flex flex-wrap gap-3">
+            {/* Year selector */}
+            <div className="flex gap-2 items-center flex-wrap">
+              <span className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+                <Calendar className="w-4 h-4 mr-1" />
+                Compare:
+              </span>
+              {availableYears.slice(0, 5).map(year => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                    (selectedYear || availableYears[0]) === year
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+
+            {/* Category selector */}
+            <div className="flex gap-2">
               <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  (selectedYear || availableYears[0]) === year
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md'
+                onClick={() => setCategory('artists')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                  category === 'artists'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                {year}
+                <Crown className="w-4 h-4" />
+                Artists
               </button>
-            ))}
-          </div>
-
-          <div className="w-px bg-gray-300 dark:border-gray-600"></div>
-
-          {/* Category selector */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCategory('artists')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                category === 'artists'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Crown className="w-4 h-4" />
-              Artists
-            </button>
-            <button
-              onClick={() => setCategory('songs')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                category === 'songs'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Music className="w-4 h-4" />
-              Songs
-            </button>
-            <button
-              onClick={() => setCategory('albums')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                category === 'albums'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Disc className="w-4 h-4" />
-              Albums
-            </button>
+              <button
+                onClick={() => setCategory('songs')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                  category === 'songs'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Music className="w-4 h-4" />
+                Songs
+              </button>
+              <button
+                onClick={() => setCategory('albums')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                  category === 'albums'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Disc className="w-4 h-4" />
+                Albums
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Year comparison info */}
-        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+        <div className="px-6 py-4 bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-200 dark:border-blue-800">
           <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
             Comparing {previousYear} → {currentYear}
           </p>

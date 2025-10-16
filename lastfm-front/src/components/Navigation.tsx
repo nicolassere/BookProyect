@@ -10,6 +10,7 @@ const navItems = [
   { id: 'ranking', label: 'All-Time Ranking', icon: Trophy },
   { id: 'timeline', label: 'Timeline', icon: Trophy },
   { id: 'years', label: 'By Year', icon: Calendar },
+  { id: 'evolution', label: 'Evolution', icon: BarChart3 },
 ];
 
 export const Navigation: React.FC<NavigationProps> = ({ activeView, onViewChange }) => (

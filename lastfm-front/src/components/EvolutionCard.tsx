@@ -7,7 +7,8 @@ interface EvolutionCardProps {
   description: string;
   data: any[];
   type: 'newcomer' | 'climber' | 'growth' | 'drop' | 'comeback' | 'consistent' | 'wonder';
-  empty Message?: string;
+  emptyMessage?: string;
+  showTop?: number;
 }
 
 const getIcon = (type: string) => {
@@ -23,87 +24,108 @@ const getIcon = (type: string) => {
   }
 };
 
-const getColorClasses = (type: string) => {
+const getTheme = (type: string) => {
   switch (type) {
-    case 'newcomer': return 'from-purple-500 to-pink-500';
-    case 'climber': return 'from-green-500 to-emerald-500';
-    case 'growth': return 'from-blue-500 to-cyan-500';
-    case 'drop': return 'from-red-500 to-orange-500';
-    case 'comeback': return 'from-yellow-500 to-amber-500';
-    case 'consistent': return 'from-indigo-500 to-purple-500';
-    case 'wonder': return 'from-pink-500 to-rose-500';
-    default: return 'from-gray-500 to-gray-600';
+    case 'newcomer': return {
+      icon: 'bg-purple-500',
+      badge: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+      accent: 'text-purple-600 dark:text-purple-400',
+      border: 'border-l-purple-500'
+    };
+    case 'climber': return {
+      icon: 'bg-green-500',
+      badge: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+      accent: 'text-green-600 dark:text-green-400',
+      border: 'border-l-green-500'
+    };
+    case 'growth': return {
+      icon: 'bg-blue-500',
+      badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      accent: 'text-blue-600 dark:text-blue-400',
+      border: 'border-l-blue-500'
+    };
+    case 'drop': return {
+      icon: 'bg-red-500',
+      badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+      accent: 'text-red-600 dark:text-red-400',
+      border: 'border-l-red-500'
+    };
+    case 'comeback': return {
+      icon: 'bg-amber-500',
+      badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+      accent: 'text-amber-600 dark:text-amber-400',
+      border: 'border-l-amber-500'
+    };
+    case 'consistent': return {
+      icon: 'bg-indigo-500',
+      badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+      accent: 'text-indigo-600 dark:text-indigo-400',
+      border: 'border-l-indigo-500'
+    };
+    case 'wonder': return {
+      icon: 'bg-pink-500',
+      badge: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
+      accent: 'text-pink-600 dark:text-pink-400',
+      border: 'border-l-pink-500'
+    };
+    default: return {
+      icon: 'bg-gray-500',
+      badge: 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300',
+      accent: 'text-gray-600 dark:text-gray-400',
+      border: 'border-l-gray-500'
+    };
   }
 };
 
-const renderItemDetails = (item: any, type: string) => {
+const renderItemDetails = (item: any, type: string, theme: ReturnType<typeof getTheme>) => {
   switch (type) {
     case 'newcomer':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-purple-600 dark:text-purple-400">New in {item.year}</span>
-          {' '} • Rank #{item.currentRank} • {item.plays.toLocaleString()} plays
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>New in {item.year}</span> • Rank #{item.currentRank} • {item.plays.toLocaleString()} plays
+        </p>
       );
     
     case 'climber':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-green-600 dark:text-green-400">
-            #{item.fromPosition} → #{item.toPosition}
-          </span>
-          {' '}(+{item.positionGain} positions) • {item.fromYear} → {item.toYear}
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>#{item.fromPosition} → #{item.toPosition}</span> (+{item.positionGain}) • {item.fromYear}-{item.toYear}
+        </p>
       );
     
     case 'growth':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-blue-600 dark:text-blue-400">
-            +{item.growthAmount.toLocaleString()} plays
-          </span>
-          {' '}(+{item.growthPercent}%) • {item.fromPlays.toLocaleString()} → {item.toPlays.toLocaleString()}
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>+{item.growthAmount.toLocaleString()}</span> (+{item.growthPercent}%) • {item.fromPlays.toLocaleString()} → {item.toPlays.toLocaleString()}
+        </p>
       );
     
     case 'drop':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-red-600 dark:text-red-400">
-            #{item.fromPosition} → #{item.toPosition === 999 ? 'Out' : item.toPosition}
-          </span>
-          {' '}(-{item.positionDrop} positions) • {item.fromYear} → {item.toYear}
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>#{item.fromPosition} → {item.toPosition === 999 ? 'Out' : `#${item.toPosition}`}</span> (-{item.positionDrop}) • {item.fromYear}-{item.toYear}
+        </p>
       );
     
     case 'comeback':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-yellow-600 dark:text-yellow-400">
-            {item.yearsAbsent} year{item.yearsAbsent > 1 ? 's' : ''} absent
-          </span>
-          {' '} • Last seen: {item.lastYear} • Back in: {item.comebackYear}
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>{item.yearsAbsent} year{item.yearsAbsent > 1 ? 's' : ''} absent</span> • Last: {item.lastYear} • Return: {item.comebackYear}
+        </p>
       );
     
     case 'consistent':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-            {item.yearsInTop10} of {item.totalYears} years in Top 10
-          </span>
-          {' '} • Avg position: #{item.averagePosition}
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>{item.yearsInTop10}/{item.totalYears} years</span> in Top 10 • Avg: #{item.averagePosition}
+        </p>
       );
     
     case 'wonder':
       return (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-pink-600 dark:text-pink-400">
-            Only in {item.year}
-          </span>
-          {' '} • Rank #{item.rank} • {item.plays.toLocaleString()} plays
-        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <span className={theme.accent}>Only {item.year}</span> • Rank #{item.rank} • {item.plays.toLocaleString()} plays
+        </p>
       );
     
     default:
@@ -116,55 +138,61 @@ export const EvolutionCard = memo<EvolutionCardProps>(({
   description, 
   data, 
   type,
-  emptyMessage = 'No data available for this metric'
+  emptyMessage = 'No data available for this metric',
+  showTop = 10
 }) => {
   const Icon = getIcon(type);
-  const colorClasses = getColorClasses(type);
+  const theme = getTheme(type);
 
   return (
-    <div className="glass dark:glass-dark rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses} shadow-lg`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{title}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 bg-gray-900 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-lg ${theme.icon}`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+            <p className="text-sm text-gray-400 mt-0.5">{description}</p>
+          </div>
         </div>
       </div>
 
-      {data.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <Icon className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">{emptyMessage}</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {data.slice(0, 5).map((item, index) => (
-            <div
-              key={index}
-              className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-all duration-300 border border-gray-200 dark:border-gray-700"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br ${colorClasses} flex items-center justify-center text-white font-bold text-sm shadow-md`}>
+      {/* Content */}
+      <div className="px-6 py-4">
+        {data.length === 0 ? (
+          <div className="text-center py-12">
+            <Icon className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {data.slice(0, showTop).map((item, index) => (
+              <div
+                key={index}
+                className={`flex items-center gap-4 p-4 rounded-lg border-l-4 ${theme.border} bg-gray-50 dark:bg-gray-700/30 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors`}
+              >
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full ${theme.badge} flex items-center justify-center font-bold text-sm`}>
                   {index + 1}
                 </div>
+                
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate mb-1">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                     {item.item}
                   </h4>
-                  {renderItemDetails(item, type)}
+                  {renderItemDetails(item, type, theme)}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
-      {data.length > 5 && (
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Showing top 5 of {data.length} results
+      {data.length > showTop && (
+        <div className="px-6 py-4">
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400 py-2">
+            Showing {showTop} of {data.length} • {data.length - showTop} more
           </p>
         </div>
       )}
