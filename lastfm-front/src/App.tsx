@@ -15,6 +15,7 @@ const OverviewView = lazy(() => import('./views/OverviewView').then(m => ({ defa
 const RankingView = lazy(() => import('./views/RankingView').then(m => ({ default: m.RankingView })));
 const YearsView = lazy(() => import('./views/YearsView').then(m => ({ default: m.YearsView })));
 const TimelineView = lazy(() => import('./views/TimelineView').then(m => ({ default: m.TimelineView })));
+const EvolutionView = lazy(() => import('./views/EvolutionView').then(m => ({ default: m.EvolutionView })));
 
 type DatePreset = 'all' | 'last7' | 'last30' | 'last90' | 'last6months' | 'lastyear' | 'custom';
 
@@ -221,6 +222,7 @@ function App() {
             {activeView === 'ranking' && <RankingView stats={stats} scrobbles={scrobbles} />}
             {activeView === 'years' && <YearsView stats={stats} />}
             {activeView === 'timeline' && <TimelineView stats={stats} />}
+            {activeView === 'evolution' && <EvolutionView evolutionStats={stats} scrobbles={scrobbles} />}
           </Suspense>
         )}
       </main>

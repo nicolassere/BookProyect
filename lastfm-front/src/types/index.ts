@@ -132,6 +132,106 @@ export interface Stats {
   yearlyStats: YearlyStats[];
 }
 
+// Add to src/types/index.ts
+
+export interface YearRanking {
+  year: number;
+  item: string;
+  position: number;
+  plays: number;
+}
+
+export interface NewcomerItem {
+  item: string;
+  year: number;
+  plays: number;
+  currentRank: number;
+}
+
+export interface ClimberItem {
+  item: string;
+  fromYear: number;
+  toYear: number;
+  fromPosition: number;
+  toPosition: number;
+  positionGain: number;
+  fromPlays: number;
+  toPlays: number;
+}
+
+export interface GrowthItem {
+  item: string;
+  fromYear: number;
+  toYear: number;
+  fromPlays: number;
+  toPlays: number;
+  growthAmount: number;
+  growthPercent: number;
+}
+
+export interface DropItem {
+  item: string;
+  fromYear: number;
+  toYear: number;
+  fromPosition: number;
+  toPosition: number;
+  positionDrop: number;
+}
+
+export interface ComebackItem {
+  item: string;
+  lastYear: number;
+  comebackYear: number;
+  yearsAbsent: number;
+  currentPlays: number;
+  currentRank: number;
+}
+
+export interface ConsistencyItem {
+  item: string;
+  yearsInTop10: number;
+  totalYears: number;
+  averagePosition: number;
+  totalPlays: number;
+}
+
+export interface OneYearWonderItem {
+  item: string;
+  year: number;
+  plays: number;
+  rank: number;
+}
+
+export interface EvolutionStats {
+  artists: {
+    newcomers: NewcomerItem[];
+    climbers: ClimberItem[];
+    growth: GrowthItem[];
+    drops: DropItem[];
+    comebacks: ComebackItem[];
+    consistent: ConsistencyItem[];
+    oneYearWonders: OneYearWonderItem[];
+  };
+  songs: {
+    newcomers: NewcomerItem[];
+    climbers: ClimberItem[];
+    growth: GrowthItem[];
+    drops: DropItem[];
+    comebacks: ComebackItem[];
+    consistent: ConsistencyItem[];
+    oneYearWonders: OneYearWonderItem[];
+  };
+  albums: {
+    newcomers: NewcomerItem[];
+    climbers: ClimberItem[];
+    growth: GrowthItem[];
+    drops: DropItem[];
+    comebacks: ComebackItem[];
+    consistent: ConsistencyItem[];
+    oneYearWonders: OneYearWonderItem[];
+  };
+}
+
 export interface LastFmArtist {
   '#text': string;
   mbid: string;
