@@ -1,3 +1,4 @@
+// src/types/author.types.ts
 export interface AuthorProfile {
   name: string;
   nationality: string;
@@ -5,6 +6,8 @@ export interface AuthorProfile {
   favoriteBook?: string;
   totalBooks: number;
   totalPages: number;
+  averageRating?: number;
+  bio?: string;
 }
 
 export interface AuthorStats {
@@ -12,4 +15,5 @@ export interface AuthorStats {
   count: number;
   pages: number;
   nationality: string;
+  averageRating?: number;
 }

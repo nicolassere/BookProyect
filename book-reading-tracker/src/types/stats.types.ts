@@ -1,10 +1,10 @@
-import type { AuthorProfile } from '../types/author.types';
-
+// src/types/stats.types.ts
 export interface Stats {
   totalBooks: number;
   totalPages: number;
   uniqueAuthors: number;
   averagePages: number;
+  averageRating: number;
   authorsByBooks: Array<{
     author: string;
     count: number;
@@ -24,10 +24,27 @@ export interface Stats {
     genre: string;
     count: number;
     pages: number;
+    averageRating: number;
   }>;
   collectionStats: Array<{
     collection: string;
     count: number;
   }>;
   authorProfiles: Map<string, AuthorProfile>;
+  
+  // New stats
+  monthlyReading: Array<{
+    month: string;
+    year: number;
+    count: number;
+    pages: number;
+  }>;
+  readingStreak: number;
+  longestBook?: Reading;
+  shortestBook?: Reading;
+  favoriteBooks: Reading[];
+  ratingDistribution: Array<{
+    rating: number;
+    count: number;
+  }>;
 }
