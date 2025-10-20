@@ -10,7 +10,7 @@ interface BookContextType {
   updateReading: (reading: Reading) => void;
   deleteReading: (id: string) => void;
   updateAuthorProfile: (profile: AuthorProfile) => void;
-  importReadings: (readings: Reading[]) => void;
+  importReadings: (readings: Reading[], replace?: boolean) => void;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const addReading = (reading: Omit<Reading, 'id' | 'parsedDate'>) => {
     const newReading: Reading = {
       ...reading,
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random(),
       parsedDate: reading.dateFinished ? new Date(reading.dateFinished) : null,
     };
     setReadings(prev => [...prev, newReading]);
@@ -59,8 +59,20 @@ export function BookProvider({ children }: { children: ReactNode }) {
     ));
   };
 
-  const importReadings = (imported: Reading[]) => {
-    setReadings(prev => [...prev, ...imported]);
+  const importReadings = (imported: Reading[], replace: boolean = false) => {
+    if (replace) {
+      // Reemplazar todos los libros
+      setReadings(imported);
+    } else {
+      // Agregar solo libros que no existan (comparar por título + autor)
+      setReadings(prev => {
+        const existing = new Set(prev.map(r => `${r.title}|${r.author}`));
+        const newBooks = imported.filter(book => 
+          !existing.has(`${book.title}|${book.author}`)
+        );
+        return [...prev, ...newBooks];
+      });
+    }
   };
 
   return (

@@ -45,24 +45,25 @@ function App() {
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedNationality, setSelectedNationality] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load data on mount
+  // Load data on mount ONCE
   useEffect(() => {
     const storedReadings = storage.loadReadings();
-    const storedProfiles = storage.loadProfiles();
     
     if (storedReadings.length > 0) {
-      importReadings(storedReadings);
+      importReadings(storedReadings, true); // true = replace
     }
-  }, []);
+    setIsLoaded(true);
+  }, []); // Sin dependencias para que solo se ejecute una vez
 
-  // Save data when it changes
+  // Save data when it changes (solo después de la carga inicial)
   useEffect(() => {
-    if (readings.length > 0) {
+    if (isLoaded && readings.length > 0) {
       storage.saveReadings(readings);
       storage.saveProfiles(authorProfiles);
     }
-  }, [readings, authorProfiles]);
+  }, [readings, authorProfiles, isLoaded]);
 
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,13 +74,30 @@ function App() {
       try {
         const csvText = event.target?.result as string;
         const imported = parseGoodreadsCSV(csvText);
-        importReadings(imported);
-        alert(`${t.common.success || 'Successfully imported'} ${imported.length} books!`);
+        
+        // Preguntar al usuario si quiere reemplazar o agregar
+        const replace = window.confirm(
+          `Se encontraron ${imported.length} libros en el CSV.\n\n` +
+          `¿Quieres REEMPLAZAR todos tus libros actuales (${readings.length}) con estos?\n\n` +
+          `Presiona OK para reemplazar, Cancelar para agregar solo los nuevos.`
+        );
+        
+        importReadings(imported, replace);
+        
+        const message = replace 
+          ? `Se reemplazaron todos los libros. Total: ${imported.length}`
+          : `Se agregaron libros nuevos. Total: ${readings.length + imported.length}`;
+        
+        alert(message);
       } catch (error) {
-        alert('Failed to import CSV. Please check the file format.');
+        console.error('Error importing CSV:', error);
+        alert('Error al importar CSV. Por favor verifica el formato del archivo.');
       }
     };
     reader.readAsText(file);
+    
+    // Limpiar el input para permitir reimportar el mismo archivo
+    e.target.value = '';
   };
 
   const handleJSONImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,12 +108,29 @@ function App() {
     reader.onload = (event) => {
       try {
         const imported = JSON.parse(event.target?.result as string) as Reading[];
-        importReadings(imported);
+        
+        const replace = window.confirm(
+          `Se encontraron ${imported.length} libros en el JSON.\n\n` +
+          `¿Quieres REEMPLAZAR todos tus libros actuales (${readings.length}) con estos?\n\n` +
+          `Presiona OK para reemplazar, Cancelar para agregar solo los nuevos.`
+        );
+        
+        importReadings(imported, replace);
+        
+        const message = replace 
+          ? `Se reemplazaron todos los libros. Total: ${imported.length}`
+          : `Se agregaron libros nuevos. Total: ${readings.length + imported.length}`;
+        
+        alert(message);
       } catch (error) {
-        alert('Failed to import JSON file.');
+        console.error('Error importing JSON:', error);
+        alert('Error al importar JSON. Por favor verifica el formato del archivo.');
       }
     };
     reader.readAsText(file);
+    
+    // Limpiar el input
+    e.target.value = '';
   };
 
   const filteredStats = {
@@ -165,6 +200,8 @@ function App() {
             addReading(book);
             setShowAddForm(false);
           }}
+          existingGenres={Array.from(new Set(readings.map(r => r.genre)))}
+          existingNationalities={Array.from(new Set(readings.map(r => r.nationality)))}
         />
       )}
 
@@ -176,6 +213,8 @@ function App() {
             updateReading(updated);
             setEditingBook(null);
           }}
+          existingGenres={Array.from(new Set(readings.map(r => r.genre)))}
+          existingNationalities={Array.from(new Set(readings.map(r => r.nationality)))}
         />
       )}
 
@@ -183,6 +222,7 @@ function App() {
         <AuthorProfileEditor
           author={selectedAuthor}
           profile={authorProfiles.get(selectedAuthor)}
+          readings={readings.filter(r => r.author === selectedAuthor)}
           onClose={() => {
             setShowAuthorEditor(false);
             setSelectedAuthor(null);

@@ -1,6 +1,7 @@
-import { Book, Plus, Download, Upload, Globe } from 'lucide-react';
+import { Book, Plus, Download, Upload, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooks } from '../../contexts/BookContext';
+import { storage } from '../../utils/storage';
 
 interface HeaderProps {
   onAddBook: () => void;
@@ -11,6 +12,19 @@ interface HeaderProps {
 export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
   const { t, language, setLanguage } = useLanguage();
   const { readings, stats } = useBooks();
+
+  const handleClearAll = () => {
+    const confirmed = window.confirm(
+      '⚠️ ¿Estás seguro de que quieres ELIMINAR TODOS los libros?\n\n' +
+      `Se borrarán ${readings.length} libros permanentemente.\n\n` +
+      'Esta acción no se puede deshacer.'
+    );
+    
+    if (confirmed) {
+      storage.clearAll();
+      window.location.reload(); // Recargar la página para limpiar el estado
+    }
+  };
 
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -33,11 +47,10 @@ export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as any)}
-              className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all flex items-center gap-2"
+              className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all"
             >
               <option value="en">🇬🇧 English</option>
               <option value="es">🇪🇸 Español</option>
-              {/* Add more languages */}
             </select>
 
             <button
@@ -61,6 +74,13 @@ export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
                   <Upload className="w-4 h-4" />
                   <input type="file" accept=".json" onChange={onJSONImport} className="hidden" />
                 </label>
+                <button
+                  onClick={handleClearAll}
+                  className="p-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all"
+                  title="Eliminar todos los libros"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </>
             )}
             
