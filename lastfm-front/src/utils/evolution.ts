@@ -98,7 +98,7 @@ export const findClimbers = (
 
   toRankings.forEach(toRank => {
     const fromRank = fromMap.get(toRank.item);
-    if (fromRank && fromRank.position > toRank.position) {
+    if (fromRank && fromRank.position > toRank.position && toRank.position <= 20) {
       climbers.push({
         item: toRank.item,
         fromYear,
@@ -157,7 +157,7 @@ export const findGrowth = (
 };
 
 /**
- * Find biggest drops - items that fell the most in ranking
+ * Find biggest drops - only considers items that were in the top 10 of `fromYear`
  */
 export const findDrops = (
   rankings: Map<number, YearRanking[]>,
@@ -165,41 +165,28 @@ export const findDrops = (
   toYear: number,
   topN: number = 10
 ): any[] => {
-  const fromRankings = rankings.get(fromYear) || [];
+  const fromRankings = (rankings.get(fromYear) || []).filter(r => r.position <= 20); // solo top 20
   const toRankings = rankings.get(toYear) || [];
 
-  const fromMap = new Map(fromRankings.map(r => [r.item, r]));
   const toMap = new Map(toRankings.map(r => [r.item, r]));
 
-  const drops: any[] = [];
-
-  fromRankings.forEach(fromRank => {
+  const drops = fromRankings.map(fromRank => {
     const toRank = toMap.get(fromRank.item);
-    if (toRank && toRank.position > fromRank.position) {
-      drops.push({
-        item: fromRank.item,
-        fromYear,
-        toYear,
-        fromPosition: fromRank.position,
-        toPosition: toRank.position,
-        positionDrop: toRank.position - fromRank.position,
-      });
-    } else if (!toRank) {
-      // Dropped out of top rankings entirely
-      drops.push({
-        item: fromRank.item,
-        fromYear,
-        toYear,
-        fromPosition: fromRank.position,
-        toPosition: 999, // Out of rankings
-        positionDrop: 999 - fromRank.position,
-      });
-    }
-  });
+    const toPosition = toRank ? toRank.position : 999; // si desapareció
+    return {
+      item: fromRank.item,
+      fromYear,
+      toYear,
+      fromPosition: fromRank.position,
+      toPosition,
+      positionDrop: toPosition - fromRank.position,
+    };
+  })
 
-  return drops
-    .sort((a, b) => b.positionDrop - a.positionDrop)
-    .slice(0, topN);
+  .filter(d => d.positionDrop > 0);
+
+  // ordenás directamente por el tamaño de la caída y tomás los top N
+  return drops.sort((a, b) => b.positionDrop - a.positionDrop).slice(0, topN);
 };
 
 /**
@@ -304,7 +291,7 @@ export const findConsistent = (
  */
 export const findOneYearWonders = (
   rankings: Map<number, YearRanking[]>,
-  minPosition: number = 25,
+  minPosition: number = 15,
   topN: number = 10
 ): any[] => {
   const itemYears = new Map<string, { year: number; plays: number; rank: number }[]>();
