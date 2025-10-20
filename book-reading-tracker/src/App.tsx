@@ -46,6 +46,7 @@ function App() {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedNationality, setSelectedNationality] = useState<string | null>(null);
   const [excludeUnrated, setExcludeUnrated] = useState(false);
+  const [excludeYA, setExcludeYA] = useState(true); // Por defecto excluir YA
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load data on mount ONCE
@@ -78,9 +79,12 @@ function App() {
       // Filtro de calificación
       if (excludeUnrated && !reading.rating) return false;
       
+      // Filtro de YA (por defecto excluido)
+      if (excludeYA && reading.genre === 'YA') return false;
+      
       return true;
     });
-  }, [readings, selectedGenre, selectedNationality, excludeUnrated]);
+  }, [readings, selectedGenre, selectedNationality, excludeUnrated, excludeYA]);
 
   // Calcular estadísticas con los readings filtrados
   const filteredStats = useMemo(() => {
@@ -170,9 +174,11 @@ function App() {
             selectedGenre={selectedGenre}
             selectedNationality={selectedNationality}
             excludeUnrated={excludeUnrated}
+            excludeYA={excludeYA}
             onGenreChange={setSelectedGenre}
             onNationalityChange={setSelectedNationality}
             onExcludeUnratedChange={setExcludeUnrated}
+            onExcludeYAChange={setExcludeYA}
             availableGenres={Array.from(new Set(readings.map(r => r.genre)))}
             availableNationalities={Array.from(new Set(readings.map(r => r.nationality)))}
           />
@@ -181,14 +187,19 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Mostrar información sobre filtros activos */}
-        {readings.length > 0 && (selectedGenre || selectedNationality || excludeUnrated) && (
+        {readings.length > 0 && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
           <div className="mb-6 bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm flex-wrap">
                 <span className="font-bold text-amber-800">Filtros activos:</span>
                 {excludeUnrated && (
                   <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-lg font-medium">
                     Solo libros calificados
+                  </span>
+                )}
+                {!excludeYA && (
+                  <span className="px-2 py-1 bg-emerald-200 text-emerald-800 rounded-lg font-medium">
+                    ✓ YA incluido
                   </span>
                 )}
                 {selectedGenre && (
@@ -202,7 +213,7 @@ function App() {
                   </span>
                 )}
               </div>
-              <span className="text-sm text-amber-700">
+              <span className="text-sm text-amber-700 whitespace-nowrap ml-2">
                 Mostrando {filteredReadings.length} de {readings.length} libros
               </span>
             </div>
