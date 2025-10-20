@@ -1,9 +1,10 @@
 // src/App.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
 import { storage } from './utils/storage';
 import { parseGoodreadsCSV } from './utils/csvParser';
+import { calculateStats } from './utils/statsCalculator';
 
 // Components
 import { Header } from './components/shared/Header';
@@ -30,7 +31,6 @@ function App() {
   const {
     readings,
     authorProfiles,
-    stats,
     addReading,
     updateReading,
     deleteReading,
@@ -45,6 +45,7 @@ function App() {
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedNationality, setSelectedNationality] = useState<string | null>(null);
+  const [excludeUnrated, setExcludeUnrated] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load data on mount ONCE
@@ -64,6 +65,27 @@ function App() {
       storage.saveProfiles(authorProfiles);
     }
   }, [readings, authorProfiles, isLoaded]);
+
+  // Filtrar readings basado en los filtros activos
+  const filteredReadings = useMemo(() => {
+    return readings.filter(reading => {
+      // Filtro de género
+      if (selectedGenre && reading.genre !== selectedGenre) return false;
+      
+      // Filtro de nacionalidad
+      if (selectedNationality && reading.nationality !== selectedNationality) return false;
+      
+      // Filtro de calificación
+      if (excludeUnrated && !reading.rating) return false;
+      
+      return true;
+    });
+  }, [readings, selectedGenre, selectedNationality, excludeUnrated]);
+
+  // Calcular estadísticas con los readings filtrados
+  const filteredStats = useMemo(() => {
+    return calculateStats(filteredReadings, authorProfiles);
+  }, [filteredReadings, authorProfiles]);
 
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,11 +155,6 @@ function App() {
     e.target.value = '';
   };
 
-  const filteredStats = {
-    ...stats,
-    // Apply filters if needed
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50">
       <Header
@@ -152,8 +169,10 @@ function App() {
           <Filters
             selectedGenre={selectedGenre}
             selectedNationality={selectedNationality}
+            excludeUnrated={excludeUnrated}
             onGenreChange={setSelectedGenre}
             onNationalityChange={setSelectedNationality}
+            onExcludeUnratedChange={setExcludeUnrated}
             availableGenres={Array.from(new Set(readings.map(r => r.genre)))}
             availableNationalities={Array.from(new Set(readings.map(r => r.nationality)))}
           />
@@ -161,13 +180,42 @@ function App() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Mostrar información sobre filtros activos */}
+        {readings.length > 0 && (selectedGenre || selectedNationality || excludeUnrated) && (
+          <div className="mb-6 bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-bold text-amber-800">Filtros activos:</span>
+                {excludeUnrated && (
+                  <span className="px-2 py-1 bg-amber-200 text-amber-800 rounded-lg font-medium">
+                    Solo libros calificados
+                  </span>
+                )}
+                {selectedGenre && (
+                  <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded-lg font-medium">
+                    Género: {selectedGenre}
+                  </span>
+                )}
+                {selectedNationality && (
+                  <span className="px-2 py-1 bg-green-200 text-green-800 rounded-lg font-medium">
+                    Nacionalidad: {selectedNationality}
+                  </span>
+                )}
+              </div>
+              <span className="text-sm text-amber-700">
+                Mostrando {filteredReadings.length} de {readings.length} libros
+              </span>
+            </div>
+          </div>
+        )}
+
         {readings.length === 0 ? (
           <WelcomeScreen onAddFirst={() => setShowAddForm(true)} />
         ) : activeView === 'overview' ? (
           <OverviewView stats={filteredStats} />
         ) : activeView === 'books' ? (
           <BooksView
-            readings={readings}
+            readings={filteredReadings}
             authorProfiles={authorProfiles}
             onEdit={setEditingBook}
             onDelete={(id) => {
@@ -179,7 +227,7 @@ function App() {
         ) : activeView === 'authors' ? (
           <AuthorsView
             stats={filteredStats}
-            readings={readings}
+            readings={filteredReadings}
             onEditAuthor={(author) => {
               setSelectedAuthor(author);
               setShowAuthorEditor(true);
@@ -222,7 +270,7 @@ function App() {
         <AuthorProfileEditor
           author={selectedAuthor}
           profile={authorProfiles.get(selectedAuthor)}
-          readings={readings.filter(r => r.author === selectedAuthor)}
+          readings={filteredReadings.filter(r => r.author === selectedAuthor)}
           onClose={() => {
             setShowAuthorEditor(false);
             setSelectedAuthor(null);
