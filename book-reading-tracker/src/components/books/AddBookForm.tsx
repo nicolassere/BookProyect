@@ -1,9 +1,9 @@
-// src/components/books/AddBookForm.tsx - ENHANCED
+// src/components/books/AddBookForm.tsx - CON SOPORTE ACADÉMICO
 import { useState, useEffect } from 'react';
-import { Search, BookOpen, X } from 'lucide-react';
+import { Search, BookOpen, X, GraduationCap } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { searchGoogleBooks, getBookByISBN } from '../../utils/googleBooksAPI';
-import type { Reading } from '../../types';
+import { searchGoogleBooks } from '../../utils/googleBooksAPI';
+import type { Reading, ReadingType } from '../../types';
 
 interface AddBookFormProps {
   onClose: () => void;
@@ -38,6 +38,12 @@ export function AddBookForm({
     yearPublished: '',
     coverUrl: '',
     notes: '',
+    readingType: 'complete' as ReadingType,
+    // Campos académicos
+    academicField: '',
+    academicLevel: '' as '' | 'undergraduate' | 'graduate' | 'reference',
+    totalChapters: '',
+    chaptersRead: '',
   });
 
   // Debounced search
@@ -79,6 +85,21 @@ export function AddBookForm({
       return;
     }
 
+    // Validación para libros académicos
+    if (formData.readingType === 'academic' && !formData.academicField) {
+      alert('Por favor especifica el campo académico para libros académicos');
+      return;
+    }
+
+    // Parsear capítulos leídos si están especificados
+    let chaptersRead: number[] | undefined;
+    if (formData.chaptersRead) {
+      chaptersRead = formData.chaptersRead
+        .split(',')
+        .map(c => parseInt(c.trim()))
+        .filter(n => !isNaN(n));
+    }
+
     onAdd({
       title: formData.title,
       author: formData.author,
@@ -95,8 +116,18 @@ export function AddBookForm({
       coverUrl: formData.coverUrl || undefined,
       notes: formData.notes || undefined,
       readCount: 1,
+      readingType: formData.readingType,
+      // Campos académicos
+      academicField: formData.readingType === 'academic' ? formData.academicField : undefined,
+      academicLevel: formData.readingType === 'academic' && formData.academicLevel 
+        ? formData.academicLevel 
+        : undefined,
+      totalChapters: formData.totalChapters ? parseInt(formData.totalChapters) : undefined,
+      chaptersRead,
     });
   };
+
+  const isAcademic = formData.readingType === 'academic' || formData.readingType === 'reference';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -115,6 +146,62 @@ export function AddBookForm({
         </div>
 
         <div className="p-8">
+          {/* Tipo de lectura */}
+          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Tipo de Lectura
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, readingType: 'complete' })}
+                className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                  formData.readingType === 'complete'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-amber-300 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Lectura Completa</div>
+                  <div className="text-xs opacity-75">Libro leído de inicio a fin</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, readingType: 'academic' })}
+                className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                  formData.readingType === 'academic'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <GraduationCap className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Libro Académico</div>
+                  <div className="text-xs opacity-75">Libro de estudio o formación</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, readingType: 'reference' })}
+                className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                  formData.readingType === 'reference'
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-purple-300 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Referencia</div>
+                  <div className="text-xs opacity-75">Libro de consulta</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Google Books Search */}
           {showSearch && (
             <div className="mb-6">
@@ -261,7 +348,73 @@ export function AddBookForm({
                   {existingNationalities.map(n => <option key={n} value={n} />)}
                 </datalist>
               </div>
+            </div>
 
+            {/* Campos académicos */}
+            {isAcademic && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Campo Académico * <GraduationCap className="w-4 h-4 inline text-indigo-600 dark:text-indigo-400" />
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.academicField}
+                    onChange={(e) => setFormData({ ...formData, academicField: e.target.value })}
+                    placeholder="ej: Matemáticas, Física, Biología, etc."
+                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:bg-gray-700 dark:text-white transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nivel Académico
+                  </label>
+                  <select
+                    value={formData.academicLevel}
+                    onChange={(e) => setFormData({ ...formData, academicLevel: e.target.value as any })}
+                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-all"
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    <option value="undergraduate">Pregrado</option>
+                    <option value="graduate">Posgrado</option>
+                    <option value="reference">Referencia</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Total de Capítulos
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.totalChapters}
+                    onChange={(e) => setFormData({ ...formData, totalChapters: e.target.value })}
+                    placeholder="ej: 12"
+                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:bg-gray-700 dark:text-white transition-all"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Capítulos Leídos (separados por comas)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.chaptersRead}
+                    onChange={(e) => setFormData({ ...formData, chaptersRead: e.target.value })}
+                    placeholder="ej: 1, 2, 5, 7"
+                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:bg-gray-700 dark:text-white transition-all"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Si no leíste el libro completo, especifica los capítulos que consultaste
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Inicio de lectura
@@ -296,6 +449,20 @@ export function AddBookForm({
                   max="5"
                   value={formData.rating}
                   onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:bg-gray-700 dark:text-white transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Año de Publicación
+                </label>
+                <input
+                  type="number"
+                  min="1000"
+                  max={new Date().getFullYear()}
+                  value={formData.yearPublished}
+                  onChange={(e) => setFormData({ ...formData, yearPublished: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:bg-gray-700 dark:text-white transition-all"
                 />
               </div>
