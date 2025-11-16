@@ -20,12 +20,14 @@ import { ReadingProgressChart } from './components/charts/ReadingProgressChart';
 import { ReadingGoalsWidget } from './components/goals/ReadingGoalsWidget';
 import { ReadingInsights } from './components/insights/ReadingInsights';
 
+
 // Views
 import { OverviewView } from './views/OverviewView';
 import { BooksView } from './views/BooksView';
 import { AuthorsView } from './views/AuthorsView';
 import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
+import { AcademicBooksView } from './views/AcademicView';
 
 // Toast notification component (simple)
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
@@ -271,6 +273,14 @@ function App() {
           </div>
         ) : activeView === 'books' ? (
           <BooksView
+            readings={filteredReadings}
+            authorProfiles={authorProfiles}
+            onEdit={setEditingBook}
+            onDelete={handleDelete}
+            onBookClick={handleBookClick}
+          />
+        ) : activeView === 'academic' ? (
+          <AcademicBooksView
             readings={filteredReadings}
             authorProfiles={authorProfiles}
             onEdit={setEditingBook}

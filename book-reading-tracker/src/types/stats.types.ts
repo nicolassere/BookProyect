@@ -1,4 +1,6 @@
 // src/types/stats.types.ts
+import type { Reading, AuthorProfile } from './book.types';
+
 export interface Stats {
   totalBooks: number;
   totalPages: number;
@@ -47,4 +49,14 @@ export interface Stats {
     rating: number;
     count: number;
   }>;
+  
+  // Academic book stats
+  academicBooks: Reading[];
+  academicByField: Array<{
+    field: string;
+    count: number;
+    pages: number;
+  }>;
+  completeBooksCount: number;
+  academicBooksCount: number;
 }

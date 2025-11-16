@@ -131,6 +131,88 @@ export function calculateStats(
     ? ratedBooks.reduce((sum, r) => sum + (r.rating || 0), 0) / ratedBooks.length
     : 0;
 
+  const academicBooks = readings.filter(r => 
+  r.readingType === 'academic' || r.readingType === 'reference'
+);
+
+  // Calcular distribución por campo académico
+  const academicByFieldMap = new Map<string, { count: number; pages: number }>();
+  academicBooks.forEach(book => {
+    const field = book.academicField || 'Sin categoría';
+    if (!academicByFieldMap.has(field)) {
+      academicByFieldMap.set(field, { count: 0, pages: 0 });
+    }
+    const data = academicByFieldMap.get(field)!;
+    data.count++;
+    data.pages += book.pages;
+  });
+
+  const academicByField = Array.from(academicByFieldMap.entries())
+    .map(([field, data]) => ({ field, ...data }))
+    .sort((a, b) => b.count - a.count);
+
+  // Contar libros completos vs académicos
+  const completeBooksCount = readings.filter(r => 
+    !r.readingType || r.readingType === 'complete'
+  ).length;
+
+  const academicBooksCount = academicBooks.length;
+
+  // ======================================================================
+
+  // MODIFICAR EL return PARA INCLUIR LAS NUEVAS PROPIEDADES:
+  return {
+    totalBooks: readings.length,
+    totalPages: readings.reduce((sum, r) => sum + r.pages, 0),
+    uniqueAuthors: authorBooks.size,
+    averagePages: readings.length > 0 
+      ? Math.round(readings.reduce((sum, r) => sum + r.pages, 0) / readings.length) 
+      : 0,
+    averageRating,
+    authorsByBooks: Array.from(authorBooks.entries())
+      .map(([author, data]) => ({ author, count: data.count, nationality: data.nationality }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 100),
+    authorsByPages: Array.from(authorPages.entries())
+      .map(([author, data]) => ({ author, pages: data.pages, nationality: data.nationality }))
+      .sort((a, b) => b.pages - a.pages)
+      .slice(0, 100),
+    authorsByNationality: Array.from(nationalityCounts.entries())
+      .map(([nationality, data]) => ({ 
+        nationality, 
+        count: data.count, 
+        authors: data.authors.size 
+      }))
+      .sort((a, b) => b.count - a.count),
+    genreDistribution: Array.from(genreCounts.entries())
+      .map(([genre, data]) => ({
+        genre,
+        count: data.count,
+        pages: data.pages,
+        averageRating: data.ratedCount > 0 ? data.totalRating / data.ratedCount : 0,
+      }))
+      .sort((a, b) => b.count - a.count),
+    collectionStats: Array.from(collectionCounts.entries())
+      .map(([collection, count]) => ({ collection, count }))
+      .sort((a, b) => b.count - a.count),
+    authorProfiles: updatedProfiles,
+    monthlyReading,
+    readingStreak,
+    longestBook,
+    shortestBook,
+    favoriteBooks,
+    ratingDistribution: Array.from(ratingDist.entries())
+      .map(([rating, count]) => ({ rating, count }))
+      .sort((a, b) => b.rating - a.rating),
+    
+    // ============= NUEVAS PROPIEDADES =============
+    academicBooks,
+    academicByField,
+    completeBooksCount,
+    academicBooksCount,
+    // ==============================================
+  };
+
   return {
     totalBooks: readings.length,
     totalPages: readings.reduce((sum, r) => sum + r.pages, 0),
@@ -177,6 +259,8 @@ export function calculateStats(
   };
 }
 
+
+
 function calculateReadingStreak(readings: Reading[]): number {
   if (readings.length === 0) return 0;
 
@@ -213,6 +297,8 @@ function calculateReadingStreak(readings: Reading[]): number {
       break;
     }
   }
+
+  
 
   return streak;
 }

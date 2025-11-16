@@ -27,6 +27,7 @@ interface TranslationStructure {
   navigation: {
     overview: string;
     books: string;
+    academic: string;
     authors: string;
     genres: string;
     nationalities: string;
@@ -113,6 +114,7 @@ const en: TranslationStructure = {
   navigation: {
     overview: 'Overview',
     books: 'Books',
+    academic: 'Academic',
     authors: 'Authors',
     genres: 'Genres',
     nationalities: 'Nationalities',
@@ -199,6 +201,7 @@ const es: TranslationStructure = {
   navigation: {
     overview: 'Resumen',
     books: 'Libros',
+    academic: 'Académicos',
     authors: 'Autores',
     genres: 'Géneros',
     nationalities: 'Nacionalidades',
