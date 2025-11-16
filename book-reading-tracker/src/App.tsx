@@ -1,11 +1,11 @@
-// src/App.tsx - ENHANCED VERSION
+// src/App.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
 import { storage } from './utils/storage';
 import { parseGoodreadsCSV } from './utils/csvParser';
 import { calculateStats } from './utils/statsCalculator';
-import type { Reading, ReadingGoal, UndoAction } from './types';
+import type { Reading, ReadingGoal, UndoAction, ReadingType } from './types';
 
 // Components
 import { Header } from './components/shared/Header';
@@ -20,16 +20,14 @@ import { ReadingProgressChart } from './components/charts/ReadingProgressChart';
 import { ReadingGoalsWidget } from './components/goals/ReadingGoalsWidget';
 import { ReadingInsights } from './components/insights/ReadingInsights';
 
-
 // Views
 import { OverviewView } from './views/OverviewView';
 import { BooksView } from './views/BooksView';
 import { AuthorsView } from './views/AuthorsView';
 import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
-import { AcademicBooksView } from './views/AcademicBooksView';
 
-// Toast notification component (simple)
+// Toast notification component
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 5000);
@@ -83,6 +81,9 @@ function App() {
   const [excludeUnrated, setExcludeUnrated] = useState(false);
   const [excludeYA, setExcludeYA] = useState(true);
   
+  // NUEVO: Filtro por tipo de lectura
+  const [bookTypeFilter, setBookTypeFilter] = useState<'normal' | 'academic' | 'all'>('normal');
+  
   // App State
   const [isLoaded, setIsLoaded] = useState(false);
   const [readingGoal, setReadingGoal] = useState<ReadingGoal | null>(null);
@@ -111,28 +112,39 @@ function App() {
     }
   }, [readings, authorProfiles, isLoaded]);
 
-  // Save goal when it changes
   useEffect(() => {
     if (isLoaded && readingGoal) {
       storage.saveGoal(readingGoal);
     }
   }, [readingGoal, isLoaded]);
 
-  // Filter readings
+  // NUEVO: Filtrar por tipo de libro ANTES de aplicar otros filtros
+  const readingsByType = useMemo(() => {
+    if (bookTypeFilter === 'all') {
+      return readings;
+    } else if (bookTypeFilter === 'academic') {
+      return readings.filter(r => r.readingType === 'academic' || r.readingType === 'reference');
+    } else {
+      // 'normal' - excluir académicos
+      return readings.filter(r => !r.readingType || r.readingType === 'complete');
+    }
+  }, [readings, bookTypeFilter]);
+
+  // Filter readings (ahora usa readingsByType)
   const filteredReadings = useMemo(() => {
-    return readings.filter(reading => {
+    return readingsByType.filter(reading => {
       if (selectedGenre && reading.genre !== selectedGenre) return false;
       if (selectedNationality && reading.nationality !== selectedNationality) return false;
       if (excludeUnrated && !reading.rating) return false;
       if (excludeYA && reading.genre === 'YA') return false;
       return true;
     });
-  }, [readings, selectedGenre, selectedNationality, excludeUnrated, excludeYA]);
+  }, [readingsByType, selectedGenre, selectedNationality, excludeUnrated, excludeYA]);
 
-  // Calculate stats
+  // Calculate stats (ahora usa readingsByType)
   const filteredStats = useMemo(() => {
-    return calculateStats(filteredReadings, authorProfiles);
-  }, [filteredReadings, authorProfiles]);
+    return calculateStats(readingsByType, authorProfiles);
+  }, [readingsByType, authorProfiles]);
 
   // Handlers
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,6 +232,46 @@ function App() {
       {readings.length > 0 && (
         <>
           <Navigation activeView={activeView} onViewChange={setActiveView} />
+          
+          {/* NUEVO: Selector de tipo de libro */}
+          <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 py-3">
+              <div className="flex gap-2 items-center">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ver:</span>
+                <button
+                  onClick={() => setBookTypeFilter('normal')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    bookTypeFilter === 'normal'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  📚 Libros Normales ({readings.filter(r => !r.readingType || r.readingType === 'complete').length})
+                </button>
+                <button
+                  onClick={() => setBookTypeFilter('academic')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    bookTypeFilter === 'academic'
+                      ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  🎓 Libros Académicos ({readings.filter(r => r.readingType === 'academic' || r.readingType === 'reference').length})
+                </button>
+                <button
+                  onClick={() => setBookTypeFilter('all')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    bookTypeFilter === 'all'
+                      ? 'bg-purple-600 dark:bg-purple-500 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  📖 Todos ({readings.length})
+                </button>
+              </div>
+            </div>
+          </div>
+
           <Filters
             selectedGenre={selectedGenre}
             selectedNationality={selectedNationality}
@@ -229,8 +281,8 @@ function App() {
             onNationalityChange={setSelectedNationality}
             onExcludeUnratedChange={setExcludeUnrated}
             onExcludeYAChange={setExcludeYA}
-            availableGenres={Array.from(new Set(readings.map(r => r.genre)))}
-            availableNationalities={Array.from(new Set(readings.map(r => r.nationality)))}
+            availableGenres={Array.from(new Set(readingsByType.map(r => r.genre)))}
+            availableNationalities={Array.from(new Set(readingsByType.map(r => r.nationality)))}
           />
         </>
       )}
@@ -248,7 +300,7 @@ function App() {
                 {selectedNationality && <span className="px-2 py-1 bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 rounded-lg font-medium">Nacionalidad: {selectedNationality}</span>}
               </div>
               <span className="text-sm text-amber-700 dark:text-amber-400 whitespace-nowrap ml-2">
-                {filteredReadings.length} de {readings.length}
+                {filteredReadings.length} de {readingsByType.length}
               </span>
             </div>
           </div>
@@ -263,7 +315,7 @@ function App() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ReadingProgressChart readings={filteredReadings} months={12} />
               <ReadingGoalsWidget 
-                readings={readings} 
+                readings={readingsByType} 
                 goal={readingGoal} 
                 onUpdateGoal={setReadingGoal} 
               />
@@ -273,14 +325,6 @@ function App() {
           </div>
         ) : activeView === 'books' ? (
           <BooksView
-            readings={filteredReadings}
-            authorProfiles={authorProfiles}
-            onEdit={setEditingBook}
-            onDelete={handleDelete}
-            onBookClick={handleBookClick}
-          />
-        ) : activeView === 'academic' ? (
-          <AcademicBooksView
             readings={filteredReadings}
             authorProfiles={authorProfiles}
             onEdit={setEditingBook}
