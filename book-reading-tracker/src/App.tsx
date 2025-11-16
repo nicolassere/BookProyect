@@ -27,7 +27,7 @@ import { BooksView } from './views/BooksView';
 import { AuthorsView } from './views/AuthorsView';
 import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
-import { AcademicBooksView } from './views/AcademicView';
+import { AcademicBooksView } from './views/AcademicBooksView';
 
 // Toast notification component (simple)
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
