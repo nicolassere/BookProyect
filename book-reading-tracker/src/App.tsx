@@ -5,7 +5,7 @@ import { useBooks } from './contexts/BookContext';
 import { storage } from './utils/storage';
 import { parseGoodreadsCSV } from './utils/csvParser';
 import { calculateStats } from './utils/statsCalculator';
-import type { Reading, ReadingGoal, UndoAction, ReadingType } from './types';
+import type { Reading, ReadingGoal, UndoAction } from './types';
 
 // Components
 import { Header } from './components/shared/Header';
@@ -75,14 +75,14 @@ function App() {
   const [showAuthorEditor, setShowAuthorEditor] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   
+  // NUEVO: Filtro por tipo de lectura
+  const [bookTypeFilter, setBookTypeFilter] = useState<'normal' | 'academic' | 'all'>('normal');
+  
   // Filter State
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedNationality, setSelectedNationality] = useState<string | null>(null);
   const [excludeUnrated, setExcludeUnrated] = useState(false);
   const [excludeYA, setExcludeYA] = useState(true);
-  
-  // NUEVO: Filtro por tipo de lectura
-  const [bookTypeFilter, setBookTypeFilter] = useState<'normal' | 'academic' | 'all'>('normal');
   
   // App State
   const [isLoaded, setIsLoaded] = useState(false);
@@ -102,7 +102,7 @@ function App() {
       setReadingGoal(storedGoal);
     }
     setIsLoaded(true);
-  }, []);
+  }, [importReadings]);
 
   // Save data when it changes
   useEffect(() => {
@@ -112,13 +112,22 @@ function App() {
     }
   }, [readings, authorProfiles, isLoaded]);
 
+  // Save goal when it changes
   useEffect(() => {
     if (isLoaded && readingGoal) {
       storage.saveGoal(readingGoal);
     }
   }, [readingGoal, isLoaded]);
 
-  // NUEVO: Filtrar por tipo de libro ANTES de aplicar otros filtros
+  // Resetear filtros cuando cambia el tipo de libro
+  useEffect(() => {
+    setSelectedGenre(null);
+    setSelectedNationality(null);
+    setExcludeUnrated(false);
+    setExcludeYA(true);
+  }, [bookTypeFilter]);
+
+  // PASO 1: Filtrar por tipo de libro
   const readingsByType = useMemo(() => {
     if (bookTypeFilter === 'all') {
       return readings;
@@ -130,21 +139,44 @@ function App() {
     }
   }, [readings, bookTypeFilter]);
 
-  // Filter readings (ahora usa readingsByType)
+  // PASO 2: Aplicar filtros adicionales
   const filteredReadings = useMemo(() => {
-    return readingsByType.filter(reading => {
-      if (selectedGenre && reading.genre !== selectedGenre) return false;
-      if (selectedNationality && reading.nationality !== selectedNationality) return false;
-      if (excludeUnrated && !reading.rating) return false;
-      if (excludeYA && reading.genre === 'YA') return false;
-      return true;
-    });
+    let result = [...readingsByType];
+    
+    if (selectedGenre) {
+      result = result.filter(r => r.genre === selectedGenre);
+    }
+    
+    if (selectedNationality) {
+      result = result.filter(r => r.nationality === selectedNationality);
+    }
+    
+    if (excludeUnrated) {
+      result = result.filter(r => r.rating && r.rating > 0);
+    }
+    
+    if (excludeYA) {
+      result = result.filter(r => r.genre !== 'YA');
+    }
+    
+    return result;
   }, [readingsByType, selectedGenre, selectedNationality, excludeUnrated, excludeYA]);
 
-  // Calculate stats (ahora usa readingsByType)
+  // Calculate stats
   const filteredStats = useMemo(() => {
-    return calculateStats(readingsByType, authorProfiles);
-  }, [readingsByType, authorProfiles]);
+    return calculateStats(filteredReadings, authorProfiles);
+  }, [filteredReadings, authorProfiles]);
+
+  // Get available genres and nationalities from current type filter
+  const availableGenres = useMemo(() => 
+    Array.from(new Set(readingsByType.map(r => r.genre))).sort(), 
+    [readingsByType]
+  );
+
+  const availableNationalities = useMemo(() => 
+    Array.from(new Set(readingsByType.map(r => r.nationality))).sort(), 
+    [readingsByType]
+  );
 
   // Handlers
   const handleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,10 +265,10 @@ function App() {
         <>
           <Navigation activeView={activeView} onViewChange={setActiveView} />
           
-          {/* NUEVO: Selector de tipo de libro */}
+          {/* Selector de tipo de libro */}
           <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 py-3">
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center flex-wrap">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ver:</span>
                 <button
                   onClick={() => setBookTypeFilter('normal')}
@@ -281,8 +313,8 @@ function App() {
             onNationalityChange={setSelectedNationality}
             onExcludeUnratedChange={setExcludeUnrated}
             onExcludeYAChange={setExcludeYA}
-            availableGenres={Array.from(new Set(readingsByType.map(r => r.genre)))}
-            availableNationalities={Array.from(new Set(readingsByType.map(r => r.nationality)))}
+            availableGenres={availableGenres}
+            availableNationalities={availableNationalities}
           />
         </>
       )}
