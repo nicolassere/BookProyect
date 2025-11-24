@@ -1,4 +1,4 @@
-// src/contexts/LanguageContext.tsx
+// src/contexts/LanguageContext.tsx - ACTUALIZADO
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Import types and translations
@@ -16,6 +16,7 @@ interface TranslationStructure {
     sort: string;
     loading: string;
     close: string;
+    select: string;
   };
   header: {
     title: string;
@@ -31,6 +32,7 @@ interface TranslationStructure {
     authors: string;
     genres: string;
     nationalities: string;
+    'yearly-stats': string;
   };
   stats: {
     booksRead: string;
@@ -103,6 +105,7 @@ const en: TranslationStructure = {
     sort: 'Sort',
     loading: 'Loading...',
     close: 'Close',
+    select: 'Select',
   },
   header: {
     title: 'Book Reading Tracker',
@@ -118,6 +121,7 @@ const en: TranslationStructure = {
     authors: 'Authors',
     genres: 'Genres',
     nationalities: 'Nationalities',
+    'yearly-stats': 'Yearly Stats',
   },
   stats: {
     booksRead: 'Books Read',
@@ -190,6 +194,7 @@ const es: TranslationStructure = {
     sort: 'Ordenar',
     loading: 'Cargando...',
     close: 'Cerrar',
+    select: 'Seleccionar',
   },
   header: {
     title: 'Registro de Lectura',
@@ -205,6 +210,7 @@ const es: TranslationStructure = {
     authors: 'Autores',
     genres: 'Géneros',
     nationalities: 'Nacionalidades',
+    'yearly-stats': 'Por Año',
   },
   stats: {
     booksRead: 'Libros Leídos',

@@ -62,30 +62,48 @@ export function EditBookForm({
         .filter(n => !isNaN(n));
     }
 
-    onSave({
-      ...book,
-      title: formData.title,
-      author: formData.author,
+    // Crear el objeto actualizado con TODOS los campos
+    const updatedBook: Reading = {
+      // Mantener campos originales que no se editan
+      id: book.id,
+      timestamp: book.timestamp,
+      readCount: book.readCount,
+      
+      // Campos editables - básicos
+      title: formData.title.trim(),
+      author: formData.author.trim(),
       pages: parseInt(formData.pages),
-      genre: formData.genre,
-      nationality: formData.nationality,
+      genre: formData.genre.trim(),
+      nationality: formData.nationality.trim(),
       dateFinished: formData.dateFinished,
-      startDate: formData.startDate || undefined,
+      parsedDate: formData.dateFinished ? new Date(formData.dateFinished) : null,
+      
+      // Campos opcionales
+      startDate: formData.startDate.trim() || undefined,
       rating: formData.rating ? parseInt(formData.rating) : undefined,
       collections: formData.collections.split(',').map(c => c.trim()).filter(Boolean),
-      isbn: formData.isbn || undefined,
+      isbn: formData.isbn.trim() || undefined,
       yearPublished: formData.yearPublished ? parseInt(formData.yearPublished) : undefined,
-      coverUrl: formData.coverUrl || undefined,
-      notes: formData.notes || undefined,
+      coverUrl: formData.coverUrl.trim() || undefined,
+      notes: formData.notes.trim() || undefined,
+      favorite: book.favorite, // Mantener estado de favorito
+      
+      // Tipo de lectura
       readingType: formData.readingType,
-      academicField: formData.readingType === 'academic' ? formData.academicField : undefined,
-      academicLevel: formData.readingType === 'academic' && formData.academicLevel 
+      
+      // Campos académicos (solo si es académico)
+      academicField: (formData.readingType === 'academic' || formData.readingType === 'reference') 
+        ? formData.academicField.trim() 
+        : undefined,
+      academicLevel: (formData.readingType === 'academic' || formData.readingType === 'reference') && formData.academicLevel 
         ? formData.academicLevel 
         : undefined,
       totalChapters: formData.totalChapters ? parseInt(formData.totalChapters) : undefined,
-      chaptersRead,
-      parsedDate: formData.dateFinished ? new Date(formData.dateFinished) : null,
-    });
+      chaptersRead: chaptersRead && chaptersRead.length > 0 ? chaptersRead : undefined,
+    };
+
+    console.log('Saving updated book:', updatedBook);
+    onSave(updatedBook);
   };
 
   const isAcademic = formData.readingType === 'academic' || formData.readingType === 'reference';

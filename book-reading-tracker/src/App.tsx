@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx - ACTUALIZADO CON YEARLY STATS
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
@@ -26,6 +26,7 @@ import { BooksView } from './views/BooksView';
 import { AuthorsView } from './views/AuthorsView';
 import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
+import { YearlyStatsView } from './views/YearlyStatsView';
 
 // Toast notification component
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
@@ -265,63 +266,68 @@ function App() {
         <>
           <Navigation activeView={activeView} onViewChange={setActiveView} />
           
-          {/* Selector de tipo de libro */}
-          <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
-            <div className="max-w-7xl mx-auto px-4 py-3">
-              <div className="flex gap-2 items-center flex-wrap">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ver:</span>
-                <button
-                  onClick={() => setBookTypeFilter('normal')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    bookTypeFilter === 'normal'
-                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  📚 Libros Normales ({readings.filter(r => !r.readingType || r.readingType === 'complete').length})
-                </button>
-                <button
-                  onClick={() => setBookTypeFilter('academic')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    bookTypeFilter === 'academic'
-                      ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  🎓 Libros Académicos ({readings.filter(r => r.readingType === 'academic' || r.readingType === 'reference').length})
-                </button>
-                <button
-                  onClick={() => setBookTypeFilter('all')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    bookTypeFilter === 'all'
-                      ? 'bg-purple-600 dark:bg-purple-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  📖 Todos ({readings.length})
-                </button>
+          {/* Solo mostrar selector de tipo y filtros si NO estamos en yearly-stats */}
+          {activeView !== 'yearly-stats' && (
+            <>
+              {/* Selector de tipo de libro */}
+              <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+                <div className="max-w-7xl mx-auto px-4 py-3">
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ver:</span>
+                    <button
+                      onClick={() => setBookTypeFilter('normal')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        bookTypeFilter === 'normal'
+                          ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      📚 Libros Normales ({readings.filter(r => !r.readingType || r.readingType === 'complete').length})
+                    </button>
+                    <button
+                      onClick={() => setBookTypeFilter('academic')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        bookTypeFilter === 'academic'
+                          ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      🎓 Libros Académicos ({readings.filter(r => r.readingType === 'academic' || r.readingType === 'reference').length})
+                    </button>
+                    <button
+                      onClick={() => setBookTypeFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        bookTypeFilter === 'all'
+                          ? 'bg-purple-600 dark:bg-purple-500 text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      📖 Todos ({readings.length})
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <Filters
-            selectedGenre={selectedGenre}
-            selectedNationality={selectedNationality}
-            excludeUnrated={excludeUnrated}
-            excludeYA={excludeYA}
-            onGenreChange={setSelectedGenre}
-            onNationalityChange={setSelectedNationality}
-            onExcludeUnratedChange={setExcludeUnrated}
-            onExcludeYAChange={setExcludeYA}
-            availableGenres={availableGenres}
-            availableNationalities={availableNationalities}
-          />
+              <Filters
+                selectedGenre={selectedGenre}
+                selectedNationality={selectedNationality}
+                excludeUnrated={excludeUnrated}
+                excludeYA={excludeYA}
+                onGenreChange={setSelectedGenre}
+                onNationalityChange={setSelectedNationality}
+                onExcludeUnratedChange={setExcludeUnrated}
+                onExcludeYAChange={setExcludeYA}
+                availableGenres={availableGenres}
+                availableNationalities={availableNationalities}
+              />
+            </>
+          )}
         </>
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Filter info banner */}
-        {readings.length > 0 && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
+        {readings.length > 0 && activeView !== 'yearly-stats' && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
           <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -374,9 +380,11 @@ function App() {
           />
         ) : activeView === 'genres' ? (
           <GenresView stats={filteredStats} />
-        ) : (
+        ) : activeView === 'nationalities' ? (
           <NationalitiesView stats={filteredStats} />
-        )}
+        ) : activeView === 'yearly-stats' ? (
+          <YearlyStatsView readings={readings} stats={filteredStats} />
+        ) : null}
       </main>
 
       {/* Modals */}
