@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+// src/contexts/BookContext.tsx - VERSIÓN FINAL
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Reading, AuthorProfile, Stats } from '../types';
 import { calculateStats } from '../utils/statsCalculator';
 
@@ -19,9 +20,29 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [authorProfiles, setAuthorProfiles] = useState<Map<string, AuthorProfile>>(new Map());
 
+  // Cargar readings del localStorage SOLO UNA VEZ al inicio
+  useEffect(() => {
+    const stored = localStorage.getItem('book_readings');
+    if (stored) {
+      const parsed = JSON.parse(stored) as Reading[];
+      const withDates = parsed.map(r => ({
+        ...r,
+        parsedDate: r.dateFinished ? new Date(r.dateFinished) : null,
+      }));
+      setReadings(withDates);
+    }
+  }, []); // <-- Array vacío = solo al inicio
+
+  // Guardar en localStorage cada vez que readings cambia
+  useEffect(() => {
+    if (readings.length > 0) {
+      localStorage.setItem('book_readings', JSON.stringify(readings));
+    }
+  }, [readings]);
+
   const stats = calculateStats(readings, authorProfiles);
 
-  const addReading = (reading: Omit<Reading, 'id' | 'parsedDate'>) => {
+  const addReading = useCallback((reading: Omit<Reading, 'id' | 'parsedDate'>) => {
     const newReading: Reading = {
       ...reading,
       id: Date.now().toString() + Math.random(),
@@ -40,26 +61,26 @@ export function BookProvider({ children }: { children: ReactNode }) {
       };
       setAuthorProfiles(prev => new Map(prev).set(reading.author, newProfile));
     }
-  };
+  }, [authorProfiles]);
 
-  const updateReading = (updated: Reading) => {
+  const updateReading = useCallback((updated: Reading) => {
     setReadings(prev => prev.map(r => r.id === updated.id ? updated : r));
-  };
+  }, []);
 
-  const deleteReading = (id: string) => {
+  const deleteReading = useCallback((id: string) => {
     setReadings(prev => prev.filter(r => r.id !== id));
-  };
+  }, []);
 
-  const updateAuthorProfile = (profile: AuthorProfile) => {
+  const updateAuthorProfile = useCallback((profile: AuthorProfile) => {
     setAuthorProfiles(prev => new Map(prev).set(profile.name, profile));
     setReadings(prev => prev.map(r => 
       r.author === profile.name 
         ? { ...r, nationality: profile.nationality, genre: profile.primaryGenre }
         : r
     ));
-  };
+  }, []);
 
-  const importReadings = (imported: Reading[], replace: boolean = false) => {
+  const importReadings = useCallback((imported: Reading[], replace: boolean = false) => {
     if (replace) {
       // Reemplazar todos los libros
       setReadings(imported);
@@ -73,7 +94,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
         return [...prev, ...newBooks];
       });
     }
-  };
+  }, []);
 
   return (
     <BookContext.Provider value={{

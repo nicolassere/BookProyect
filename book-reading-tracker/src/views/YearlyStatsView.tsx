@@ -1,415 +1,337 @@
-// src/views/YearlyStatsView.tsx
-import { useState, useMemo } from 'react';
-import { Calendar, TrendingUp, Book, BarChart3, Award, Target } from 'lucide-react';
-import type { Reading, Stats } from '../types';
+// src/views/YearlyStatsView.tsx - SIN LIBROS ACADÉMICOS
+import { useMemo, useState } from 'react';
+import { Calendar, TrendingUp, BookOpen, Star } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useBooks } from '../contexts/BookContext';
+import type { Reading } from '../types';
 
-interface YearlyStatsViewProps {
-  readings: Reading[];
-  stats: Stats;
-}
-
-interface YearData {
+interface YearStats {
   year: number;
   books: number;
   pages: number;
   avgPages: number;
   genres: Map<string, number>;
-  topGenre: string;
   authors: Set<string>;
   avgRating: number;
   fiveStars: number;
 }
 
-export function YearlyStatsView({ readings }: YearlyStatsViewProps) {
-  const [selectedYears, setSelectedYears] = useState<number[]>([]);
+export function YearlyStatsView() {
+  const { t } = useLanguage();
+  const { readings } = useBooks();
+  
+  // FILTRAR LIBROS ACADÉMICOS Y DE REFERENCIA
+  const nonAcademicBooks = useMemo(() => {
+    return readings.filter(r => 
+      r.readingType !== 'academic' && 
+      r.readingType !== 'reference'
+    );
+  }, [readings]);
 
-  // Calcular estadísticas por año
-  const yearlyData = useMemo(() => {
-    const dataByYear = new Map<number, YearData>();
-
-    readings.forEach(reading => {
-      if (!reading.parsedDate) return;
-      
-      const year = reading.parsedDate.getFullYear();
-      
-      if (!dataByYear.has(year)) {
-        dataByYear.set(year, {
-          year,
-          books: 0,
-          pages: 0,
-          avgPages: 0,
-          genres: new Map(),
-          topGenre: '',
-          authors: new Set(),
-          avgRating: 0,
-          fiveStars: 0,
-        });
-      }
-
-      const yearData = dataByYear.get(year)!;
-      yearData.books++;
-      yearData.pages += reading.pages;
-      yearData.authors.add(reading.author);
-      
-      // Géneros
-      const genreCount = yearData.genres.get(reading.genre) || 0;
-      yearData.genres.set(reading.genre, genreCount + 1);
-      
-      // Ratings
-      if (reading.rating) {
-        if (reading.rating === 5) yearData.fiveStars++;
+  // Obtener años únicos (solo de libros no académicos)
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    nonAcademicBooks.forEach(r => {
+      if (r.parsedDate) {
+        years.add(r.parsedDate.getFullYear());
       }
     });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [nonAcademicBooks]);
 
-    // Calcular promedios y encontrar género top
-    dataByYear.forEach(yearData => {
-      yearData.avgPages = Math.round(yearData.pages / yearData.books);
-      
-      // Encontrar género más leído
-      let maxCount = 0;
-      yearData.genres.forEach((count, genre) => {
-        if (count > maxCount) {
-          maxCount = count;
-          yearData.topGenre = genre;
+  const [selectedYears, setSelectedYears] = useState<number[]>(() => {
+    return availableYears.slice(0, Math.min(3, availableYears.length));
+  });
+
+  // Calcular estadísticas por año
+  const yearlyStats = useMemo(() => {
+    const stats = new Map<number, YearStats>();
+
+    selectedYears.forEach(year => {
+      const yearBooks = nonAcademicBooks.filter(r => 
+        r.parsedDate && r.parsedDate.getFullYear() === year
+      );
+
+      const genres = new Map<string, number>();
+      const authors = new Set<string>();
+      let totalRating = 0;
+      let ratedBooks = 0;
+      let fiveStars = 0;
+
+      yearBooks.forEach(book => {
+        genres.set(book.genre, (genres.get(book.genre) || 0) + 1);
+        authors.add(book.author);
+        
+        if (book.rating) {
+          totalRating += book.rating;
+          ratedBooks++;
+          if (book.rating === 5) fiveStars++;
         }
       });
 
-      // Calcular rating promedio
-      const booksWithRating = readings.filter(r => 
-        r.parsedDate?.getFullYear() === yearData.year && r.rating
-      );
-      if (booksWithRating.length > 0) {
-        yearData.avgRating = booksWithRating.reduce((sum, r) => sum + (r.rating || 0), 0) / booksWithRating.length;
-      }
+      const totalPages = yearBooks.reduce((sum, b) => sum + b.pages, 0);
+      
+      stats.set(year, {
+        year,
+        books: yearBooks.length,
+        pages: totalPages,
+        avgPages: yearBooks.length > 0 ? Math.round(totalPages / yearBooks.length) : 0,
+        genres,
+        authors,
+        avgRating: ratedBooks > 0 ? totalRating / ratedBooks : 0,
+        fiveStars,
+      });
     });
 
-    return Array.from(dataByYear.values()).sort((a, b) => b.year - a.year);
-  }, [readings]);
-
-  const availableYears = yearlyData.map(d => d.year);
-  const currentYear = new Date().getFullYear();
-
-  // Si no hay años seleccionados, mostrar el año actual y el anterior
-  const displayYears = selectedYears.length > 0 
-    ? selectedYears 
-    : [currentYear, currentYear - 1].filter(y => availableYears.includes(y));
-
-  const compareData = yearlyData.filter(d => displayYears.includes(d.year));
+    return stats;
+  }, [nonAcademicBooks, selectedYears]);
 
   const toggleYear = (year: number) => {
-    if (selectedYears.includes(year)) {
-      setSelectedYears(selectedYears.filter(y => y !== year));
-    } else {
-      setSelectedYears([...selectedYears, year]);
-    }
+    setSelectedYears(prev => {
+      if (prev.includes(year)) {
+        return prev.filter(y => y !== year);
+      } else if (prev.length < 6) {
+        return [...prev, year].sort((a, b) => b - a);
+      }
+      return prev;
+    });
   };
 
-  const getYearColor = (index: number) => {
-    const colors = [
-      'from-blue-500 to-blue-600',
-      'from-purple-500 to-purple-600',
-      'from-green-500 to-green-600',
-      'from-orange-500 to-orange-600',
-      'from-pink-500 to-pink-600',
-      'from-indigo-500 to-indigo-600',
-    ];
-    return colors[index % colors.length];
-  };
+  const maxBooks = Math.max(...Array.from(yearlyStats.values()).map(s => s.books), 1);
+  const maxPages = Math.max(...Array.from(yearlyStats.values()).map(s => s.pages), 1);
 
-  const getMaxValue = (key: keyof YearData) => {
-    return Math.max(...compareData.map(d => typeof d[key] === 'number' ? d[key] : 0));
-  };
+  const colors = [
+    'from-amber-500 to-orange-600',
+    'from-blue-500 to-indigo-600',
+    'from-green-500 to-emerald-600',
+    'from-purple-500 to-pink-600',
+    'from-red-500 to-rose-600',
+    'from-cyan-500 to-teal-600',
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Evolución por Año
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Compara tus estadísticas de lectura a través de los años
-              </p>
-            </div>
-          </div>
-
-          {/* Year selector */}
-          <div className="flex gap-2 flex-wrap">
-            {availableYears.map(year => (
-              <button
-                key={year}
-                onClick={() => toggleYear(year)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  displayYears.includes(year)
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg">
+          <Calendar className="w-6 h-6 text-white" />
         </div>
-
-        {displayYears.length === 0 && (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            Selecciona al menos un año para ver las estadísticas
-          </div>
-        )}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {t.navigation['yearly-stats']}
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Libros completos (excluye académicos y referencia)
+          </p>
+        </div>
       </div>
 
-      {displayYears.length > 0 && (
+      {/* Selector de años */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          {t.common.select} años (máximo 6):
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {availableYears.map(year => (
+            <button
+              key={year}
+              onClick={() => toggleYear(year)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                selectedYears.includes(year)
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedYears.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          Selecciona al menos un año para ver estadísticas
+        </div>
+      ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {compareData.map((yearData, index) => (
-              <div
-                key={yearData.year}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-gray-700"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {yearData.year}
-                  </span>
-                  <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${getYearColor(index)}`} />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Libros</span>
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {yearData.books}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Páginas</span>
-                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {yearData.pages.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Autores</span>
-                    <span className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                      {yearData.authors.size}
-                    </span>
-                  </div>
-                  {yearData.avgRating > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Rating</span>
-                      <span className="text-lg font-semibold text-amber-600 dark:text-amber-400">
-                        {yearData.avgRating.toFixed(1)} ⭐
-                      </span>
-                    </div>
-                  )}
-                </div>
+          {/* Comparaciones */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Libros leídos */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Libros Leídos</h3>
               </div>
-            ))}
-          </div>
-
-          {/* Comparison Charts */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Comparación de Métricas
-            </h3>
-
-            <div className="space-y-6">
-              {/* Books Comparison */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Libros Leídos
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Max: {getMaxValue('books')}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {compareData.map((yearData, index) => (
-                    <div key={yearData.year} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-12">
-                        {yearData.year}
-                      </span>
-                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
+              <div className="space-y-3">
+                {selectedYears.map((year, idx) => {
+                  const stats = yearlyStats.get(year);
+                  if (!stats) return null;
+                  const percentage = (stats.books / maxBooks) * 100;
+                  return (
+                    <div key={year}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{year}</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{stats.books}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full bg-gradient-to-r ${getYearColor(index)} rounded-full flex items-center justify-end px-3 transition-all duration-500`}
-                          style={{
-                            width: `${(yearData.books / getMaxValue('books')) * 100}%`
-                          }}
-                        >
-                          <span className="text-xs font-bold text-white">
-                            {yearData.books}
-                          </span>
-                        </div>
+                          className={`h-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Pages Comparison */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Total de Páginas
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Max: {getMaxValue('pages').toLocaleString()}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {compareData.map((yearData, index) => (
-                    <div key={yearData.year} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-12">
-                        {yearData.year}
-                      </span>
-                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
+            {/* Total de páginas */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Total de Páginas</h3>
+              </div>
+              <div className="space-y-3">
+                {selectedYears.map((year, idx) => {
+                  const stats = yearlyStats.get(year);
+                  if (!stats) return null;
+                  const percentage = (stats.pages / maxPages) * 100;
+                  return (
+                    <div key={year}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{year}</span>
+                        <span className="text-gray-900 dark:text-white font-bold">
+                          {stats.pages.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full bg-gradient-to-r ${getYearColor(index)} rounded-full flex items-center justify-end px-3 transition-all duration-500`}
-                          style={{
-                            width: `${(yearData.pages / getMaxValue('pages')) * 100}%`
-                          }}
-                        >
-                          <span className="text-xs font-bold text-white">
-                            {yearData.pages.toLocaleString()}
-                          </span>
-                        </div>
+                          className={`h-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Average Pages Comparison */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Promedio de Páginas/Libro
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Max: {getMaxValue('avgPages')}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {compareData.map((yearData, index) => (
-                    <div key={yearData.year} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-12">
-                        {yearData.year}
-                      </span>
-                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
+            {/* Promedio de páginas */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">Páginas por Libro</h3>
+              </div>
+              <div className="space-y-3">
+                {selectedYears.map((year, idx) => {
+                  const stats = yearlyStats.get(year);
+                  if (!stats) return null;
+                  const maxAvg = Math.max(...Array.from(yearlyStats.values()).map(s => s.avgPages), 1);
+                  const percentage = (stats.avgPages / maxAvg) * 100;
+                  return (
+                    <div key={year}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{year}</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{stats.avgPages}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full bg-gradient-to-r ${getYearColor(index)} rounded-full flex items-center justify-end px-3 transition-all duration-500`}
-                          style={{
-                            width: `${(yearData.avgPages / getMaxValue('avgPages')) * 100}%`
-                          }}
-                        >
-                          <span className="text-xs font-bold text-white">
-                            {yearData.avgPages}
-                          </span>
-                        </div>
+                          className={`h-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Detailed Stats Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {compareData.map((yearData, index) => (
-              <div
-                key={yearData.year}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-gray-200 dark:border-gray-700"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Detalles {yearData.year}
-                  </h3>
-                  <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${getYearColor(index)}`} />
-                </div>
+          {/* Cards detallados por año */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {selectedYears.map((year, idx) => {
+              const stats = yearlyStats.get(year);
+              if (!stats) return null;
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Book className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Género favorito
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                      {yearData.topGenre}
-                    </span>
+              const topGenres = Array.from(stats.genres.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+
+              return (
+                <div
+                  key={year}
+                  className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                >
+                  <div className={`inline-block px-4 py-2 rounded-lg bg-gradient-to-r ${colors[idx % colors.length]} text-white font-bold text-xl mb-4`}>
+                    {year}
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Autores únicos
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Libros</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{stats.books}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Páginas</span>
+                      <span className="font-bold text-gray-900 dark:text-white">
+                        {stats.pages.toLocaleString()}
                       </span>
                     </div>
-                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                      {yearData.authors.size}
-                    </span>
-                  </div>
 
-                  <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Libros 5 estrellas
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Autores únicos</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{stats.authors.size}</span>
+                    </div>
+
+                    {topGenres.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Género top</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{topGenres[0][0]}</span>
+                      </div>
+                    )}
+
+                    {stats.avgRating > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Rating promedio</span>
+                        <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1">
+                          {stats.avgRating.toFixed(1)}
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        </span>
+                      </div>
+                    )}
+
+                    {stats.fiveStars > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">5 estrellas</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{stats.fiveStars}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Libros/mes</span>
+                      <span className="font-bold text-gray-900 dark:text-white">
+                        {(stats.books / 12).toFixed(1)}
                       </span>
                     </div>
-                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                      {yearData.fiveStars}
-                    </span>
-                  </div>
 
-                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Libros/mes promedio
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                      {(yearData.books / 12).toFixed(1)}
-                    </span>
-                  </div>
-
-                  {/* Top 3 genres */}
-                  {yearData.genres.size > 0 && (
-                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
-                        Top 3 Géneros
-                      </p>
-                      <div className="space-y-1">
-                        {Array.from(yearData.genres.entries())
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 3)
-                          .map(([genre, count], i) => (
-                            <div key={genre} className="flex items-center justify-between text-sm">
-                              <span className="text-gray-700 dark:text-gray-300">
-                                {i + 1}. {genre}
-                              </span>
-                              <span className="font-semibold text-gray-900 dark:text-white">
-                                {count}
-                              </span>
+                    {topGenres.length > 0 && (
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Top 3 géneros:</p>
+                        <div className="space-y-1">
+                          {topGenres.map(([genre, count]) => (
+                            <div key={genre} className="flex justify-between text-sm">
+                              <span className="text-gray-700 dark:text-gray-300">{genre}</span>
+                              <span className="text-gray-500 dark:text-gray-400">{count}</span>
                             </div>
                           ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
