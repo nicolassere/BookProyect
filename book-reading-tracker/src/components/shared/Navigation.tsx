@@ -14,6 +14,7 @@ const navItems = [
   { id: 'genres', icon: Tag },
   { id: 'nationalities', icon: Globe },
   { id: 'yearly-stats', icon: Calendar },
+  { id: 'publication-years', icon: Calendar }
 ];
 
 export function Navigation({ activeView, onViewChange }: NavigationProps) {

@@ -122,6 +122,7 @@ const en: TranslationStructure = {
     genres: 'Genres',
     nationalities: 'Nationalities',
     'yearly-stats': 'Yearly Stats',
+    'publication-year': 'Publication Year',
   },
   stats: {
     booksRead: 'Books Read',
@@ -211,6 +212,7 @@ const es: TranslationStructure = {
     genres: 'Géneros',
     nationalities: 'Nacionalidades',
     'yearly-stats': 'Por Año',
+    'publication-year': 'Año de Publicación',
   },
   stats: {
     booksRead: 'Libros Leídos',

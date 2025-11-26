@@ -1,4 +1,4 @@
-// src/App.tsx - ACTUALIZADO CON YEARLY STATS
+// src/App.tsx - ACTUALIZADO CON YEARLY STATS Y PUBLICATION YEARS
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
@@ -27,6 +27,7 @@ import { AuthorsView } from './views/AuthorsView';
 import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
 import { YearlyStatsView } from './views/YearlyStatsView';
+import { PublicationYearView } from './views/PublicationYearView';
 
 // Toast notification component
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
@@ -266,8 +267,8 @@ function App() {
         <>
           <Navigation activeView={activeView} onViewChange={setActiveView} />
           
-          {/* Solo mostrar selector de tipo y filtros si NO estamos en yearly-stats */}
-          {activeView !== 'yearly-stats' && (
+          {/* Solo mostrar selector de tipo y filtros si NO estamos en yearly-stats o publication-years */}
+          {activeView !== 'yearly-stats' && activeView !== 'publication-years' && (
             <>
               {/* Selector de tipo de libro */}
               <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
@@ -327,7 +328,7 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Filter info banner */}
-        {readings.length > 0 && activeView !== 'yearly-stats' && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
+        {readings.length > 0 && activeView !== 'yearly-stats' && activeView !== 'publication-years' && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
           <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -384,7 +385,10 @@ function App() {
           <NationalitiesView stats={filteredStats} />
         ) : activeView === 'yearly-stats' ? (
           <YearlyStatsView readings={readings} stats={filteredStats} />
-        ) : null}
+        ) : activeView === 'publication-years' ? (
+          <PublicationYearView />
+        ) : 
+        null}
       </main>
 
       {/* Modals */}

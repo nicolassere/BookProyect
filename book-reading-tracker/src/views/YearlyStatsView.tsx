@@ -20,11 +20,12 @@ export function YearlyStatsView() {
   const { t } = useLanguage();
   const { readings } = useBooks();
   
-  // FILTRAR LIBROS ACADÉMICOS Y DE REFERENCIA
+  // FILTRAR LIBROS ACADÉMICOS, DE REFERENCIA Y YA
   const nonAcademicBooks = useMemo(() => {
     return readings.filter(r => 
       r.readingType !== 'academic' && 
-      r.readingType !== 'reference'
+      r.readingType !== 'reference' &&
+      r.genre !== 'YA' // Excluir YA también
     );
   }, [readings]);
 
@@ -118,10 +119,10 @@ export function YearlyStatsView() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t.navigation['yearly-stats']}
+            Estadísticas por Año
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Libros completos (excluye académicos y referencia)
+            Libros completos (excluye académicos, referencia y YA)
           </p>
         </div>
       </div>
@@ -129,7 +130,7 @@ export function YearlyStatsView() {
       {/* Selector de años */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          {t.common.select} años (máximo 6):
+          Selecciona años (máximo 6):
         </label>
         <div className="flex flex-wrap gap-2">
           {availableYears.map(year => (
