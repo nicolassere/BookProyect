@@ -1,4 +1,4 @@
-// src/App.tsx - ACTUALIZADO CON YEARLY STATS Y PUBLICATION YEARS
+// src/App.tsx - 
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
@@ -380,9 +380,9 @@ function App() {
             }}
           />
         ) : activeView === 'genres' ? (
-          <GenresView stats={filteredStats} />
+          <GenresView stats={filteredStats} readings={filteredReadings} />
         ) : activeView === 'nationalities' ? (
-          <NationalitiesView stats={filteredStats} />
+          <NationalitiesView stats={filteredStats} readings={filteredReadings} />
         ) : activeView === 'yearly-stats' ? (
           <YearlyStatsView readings={readings} stats={filteredStats} />
         ) : activeView === 'publication-years' ? (
