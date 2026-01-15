@@ -1,4 +1,4 @@
-// src/views/NationalitiesView.tsx - ENHANCED
+// src/views/NationalitiesView.tsx - WITHOUT SQUARE CARDS
 import { useState, useMemo } from 'react';
 import { Globe, Users, Book, FileText, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,9 +14,8 @@ type ViewMode = 'books' | 'pages' | 'authors';
 export function NationalitiesView({ stats, readings = [] }: NationalitiesViewProps) {
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<ViewMode>('books');
-  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
-  // Calcular datos por nacionalidad incluyendo páginas
+  // Calculate data by nationality including pages
   const nationalityData = useMemo(() => {
     const data = new Map<string, { books: number; pages: number; authors: Set<string> }>();
     
@@ -172,76 +171,6 @@ export function NationalitiesView({ stats, readings = [] }: NationalitiesViewPro
         </div>
       </div>
 
-      {/* Distribución Circular - Top 10 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 mb-6">
-          <Globe className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            Distribución Global - Top 10 Países
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {topNationalities.slice(0, 10).map((nat, i) => {
-            const value = getCurrentValue(nat);
-            const percentage = (value / nationalityData.reduce((sum, d) => sum + getCurrentValue(d), 0)) * 100;
-            
-            // Colores del gradiente naranja
-            const colors = [
-              'from-orange-500 to-red-600',
-              'from-orange-400 to-orange-600',
-              'from-amber-500 to-orange-500',
-              'from-amber-400 to-amber-600',
-              'from-yellow-500 to-amber-500',
-              'from-orange-300 to-orange-500',
-              'from-amber-300 to-orange-400',
-              'from-yellow-400 to-amber-400',
-              'from-orange-200 to-orange-400',
-              'from-amber-200 to-amber-400',
-            ];
-
-            return (
-              <div
-                key={nat.nationality}
-                className="group cursor-pointer"
-                onMouseEnter={() => setHoveredCountry(nat.nationality)}
-                onMouseLeave={() => setHoveredCountry(null)}
-              >
-                <div className={`aspect-square rounded-2xl bg-gradient-to-br ${colors[i]} p-4 shadow-lg transition-all duration-300 ${
-                  hoveredCountry === nat.nationality ? 'scale-110 shadow-2xl' : 'hover:scale-105'
-                }`}>
-                  <div className="h-full flex flex-col items-center justify-center text-white">
-                    <span className="text-3xl font-bold mb-1">
-                      {viewMode === 'pages' ? Math.round(value / 1000) + 'k' : value}
-                    </span>
-                    <span className="text-xs font-semibold opacity-90 text-center">
-                      {percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-                <p className="text-center text-xs font-semibold text-gray-900 dark:text-white mt-2 truncate">
-                  {nat.nationality}
-                </p>
-                <p className="text-center text-xs text-gray-600 dark:text-gray-400">
-                  {nat.authors} autores
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Resumen del resto */}
-        {nationalityData.length > 10 && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl">
-            <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-              + {nationalityData.length - 10} países más con{' '}
-              {nationalityData.slice(10).reduce((sum, d) => sum + getCurrentValue(d), 0).toLocaleString()}{' '}
-              {getLabel().toLowerCase()}
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Bar Charts */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2 mb-6">
@@ -257,12 +186,7 @@ export function NationalitiesView({ stats, readings = [] }: NationalitiesViewPro
             const percentage = (value / maxValue) * 100;
             
             return (
-              <div
-                key={nat.nationality}
-                className="group"
-                onMouseEnter={() => setHoveredCountry(nat.nationality)}
-                onMouseLeave={() => setHoveredCountry(null)}
-              >
+              <div key={nat.nationality} className="group">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-sm font-bold text-orange-600 dark:text-orange-400 w-6">
                     #{i + 1}

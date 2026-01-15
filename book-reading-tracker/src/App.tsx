@@ -1,4 +1,4 @@
-// src/App.tsx - 
+// src/App.tsx - UPDATED with new views
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
@@ -28,6 +28,9 @@ import { GenresView } from './views/GenresView';
 import { NationalitiesView } from './views/NationalitiesView';
 import { YearlyStatsView } from './views/YearlyStatsView';
 import { PublicationYearView } from './views/PublicationYearView';
+import { HallOfFameView } from './views/HallOfFameView';
+import { BookComparatorView } from './views/BookComparatorView';
+import { SagasView } from './views/SagasView';
 
 // Toast notification component
 function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => void; onClose: () => void }) {
@@ -57,6 +60,9 @@ function Toast({ message, onUndo, onClose }: { message: string; onUndo?: () => v
   );
 }
 
+// Views that don't need filters
+const VIEWS_WITHOUT_FILTERS = ['yearly-stats', 'publication-years', 'hall-of-fame', 'comparator', 'sagas'];
+
 function App() {
   const { t } = useLanguage();
   const {
@@ -77,7 +83,7 @@ function App() {
   const [showAuthorEditor, setShowAuthorEditor] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   
-  // NUEVO: Filtro por tipo de lectura
+  // Book type filter
   const [bookTypeFilter, setBookTypeFilter] = useState<'normal' | 'academic' | 'all'>('normal');
   
   // Filter State
@@ -121,7 +127,7 @@ function App() {
     }
   }, [readingGoal, isLoaded]);
 
-  // Resetear filtros cuando cambia el tipo de libro
+  // Reset filters when book type changes
   useEffect(() => {
     setSelectedGenre(null);
     setSelectedNationality(null);
@@ -129,19 +135,19 @@ function App() {
     setExcludeYA(true);
   }, [bookTypeFilter]);
 
-  // PASO 1: Filtrar por tipo de libro
+  // Step 1: Filter by book type
   const readingsByType = useMemo(() => {
     if (bookTypeFilter === 'all') {
       return readings;
     } else if (bookTypeFilter === 'academic') {
       return readings.filter(r => r.readingType === 'academic' || r.readingType === 'reference');
     } else {
-      // 'normal' - excluir académicos
+      // 'normal' - exclude academic
       return readings.filter(r => !r.readingType || r.readingType === 'complete');
     }
   }, [readings, bookTypeFilter]);
 
-  // PASO 2: Aplicar filtros adicionales
+  // Step 2: Apply additional filters
   const filteredReadings = useMemo(() => {
     let result = [...readingsByType];
     
@@ -255,6 +261,9 @@ function App() {
     setViewingBook(book);
   };
 
+  // Check if current view needs filters
+  const showFilters = !VIEWS_WITHOUT_FILTERS.includes(activeView);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
       <Header
@@ -267,10 +276,10 @@ function App() {
         <>
           <Navigation activeView={activeView} onViewChange={setActiveView} />
           
-          {/* Solo mostrar selector de tipo y filtros si NO estamos en yearly-stats o publication-years */}
-          {activeView !== 'yearly-stats' && activeView !== 'publication-years' && (
+          {/* Only show type selector and filters for views that need them */}
+          {showFilters && (
             <>
-              {/* Selector de tipo de libro */}
+              {/* Book type selector */}
               <div className="bg-white/80 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                   <div className="flex gap-2 items-center flex-wrap">
@@ -328,7 +337,7 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Filter info banner */}
-        {readings.length > 0 && activeView !== 'yearly-stats' && activeView !== 'publication-years' && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
+        {readings.length > 0 && showFilters && (selectedGenre || selectedNationality || excludeUnrated || !excludeYA) && (
           <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -383,10 +392,16 @@ function App() {
           <GenresView stats={filteredStats} readings={filteredReadings} />
         ) : activeView === 'nationalities' ? (
           <NationalitiesView stats={filteredStats} readings={filteredReadings} />
+        ) : activeView === 'sagas' ? (
+          <SagasView />
         ) : activeView === 'yearly-stats' ? (
-          <YearlyStatsView readings={readings} stats={filteredStats} />
+          <YearlyStatsView />
         ) : activeView === 'publication-years' ? (
           <PublicationYearView />
+        ) : activeView === 'hall-of-fame' ? (
+          <HallOfFameView />
+        ) : activeView === 'comparator' ? (
+          <BookComparatorView />
         ) : 
         null}
       </main>
