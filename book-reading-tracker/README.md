@@ -1,4 +1,45 @@
-# React + TypeScript + Vite
+# Book Reading Tracker
+
+A personal book reading tracker built with React, TypeScript, and Vite. Track your reading progress, organize books by genre and nationality, and automatically import book details from Google Books.
+
+## Quick Start
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. (Optional) Set up Google Books API:
+   - Copy `.env.example` to `.env`
+   - Get a free API key from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - Enable the "Books API" in your project
+   - Add your API key to `.env`:
+     ```
+     VITE_GOOGLE_BOOKS_API_KEY=your_api_key_here
+     ```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+## Features
+
+- **Google Books Integration**: Automatically import book details (title, author, cover, pages, etc.)
+- **Multiple Reading Types**: Track complete reads, academic books, and reference materials
+- **Rich Metadata**: Store ISBN, publication year, ratings, notes, and more
+- **Hall of Fame**: Highlight your favorite books
+- **Statistics**: View reading stats by year, genre, and nationality
+- **Dark Mode**: Full dark mode support
+
+## Google Books API
+
+The app works without an API key, but Google Books has strict rate limits for anonymous requests. If you see "Rate limit exceeded" errors:
+
+1. Get a free API key (see Quick Start above)
+2. The free tier includes 1,000 requests/day, which is plenty for personal use
+
+## Tech Stack
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

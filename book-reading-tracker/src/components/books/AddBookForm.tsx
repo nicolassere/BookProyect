@@ -23,6 +23,7 @@ export function AddBookForm({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
+  const [searchError, setSearchError] = useState<string>('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -50,13 +51,23 @@ export function AddBookForm({
   useEffect(() => {
     if (searchQuery.length < 3) {
       setSearchResults([]);
+      setSearchError('');
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const results = await searchGoogleBooks(searchQuery);
-      setSearchResults(results);
+      setSearchError('');
+      try {
+        const results = await searchGoogleBooks(searchQuery);
+        setSearchResults(results);
+        if (results.length === 0) {
+          setSearchError('No results found. Try a different search term.');
+        }
+      } catch (error: any) {
+        setSearchError(error.message || 'Error searching Google Books. Please try again later.');
+        setSearchResults([]);
+      }
       setIsSearching(false);
     }, 500);
 
@@ -255,6 +266,17 @@ export function AddBookForm({
               {isSearching && (
                 <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
                   Buscando...
+                </div>
+              )}
+
+              {searchError && (
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{searchError}</p>
+                  {searchError.includes('Rate limit') && (
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                      To fix this, add a Google Books API key to your .env file. See .env.example for instructions.
+                    </p>
+                  )}
                 </div>
               )}
 

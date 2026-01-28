@@ -11,11 +11,19 @@ interface GoogleBookResult {
 
 export async function searchGoogleBooks(query: string): Promise<GoogleBookResult[]> {
   try {
+    // Get API key from environment variable (optional, but recommended for higher rate limits)
+    const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY || '';
+    const apiKeyParam = apiKey ? `&key=${apiKey}` : '';
+
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10${apiKeyParam}`
     );
     
     if (!response.ok) {
+      if (response.status === 429) {
+        console.error('Google Books API rate limit exceeded. Please add a VITE_GOOGLE_BOOKS_API_KEY to your .env file');
+        throw new Error('Rate limit exceeded. Please try again later or add an API key.');
+      }
       throw new Error('Failed to fetch from Google Books');
     }
 
@@ -49,8 +57,12 @@ export async function searchGoogleBooks(query: string): Promise<GoogleBookResult
 
 export async function getBookByISBN(isbn: string): Promise<GoogleBookResult | null> {
   try {
+    // Get API key from environment variable (optional, but recommended for higher rate limits)
+    const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY || '';
+    const apiKeyParam = apiKey ? `&key=${apiKey}` : '';
+
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}${apiKeyParam}`
     );
     
     if (!response.ok) {

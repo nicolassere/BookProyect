@@ -4,19 +4,19 @@ import { useState, useMemo, useEffect } from 'react';
 import { 
   Trophy, Star, Crown, Award, Medal, Sparkles, Plus, X, Search, 
   ChevronUp, ChevronDown, GripVertical, Calendar, BookOpen, Users,
-  Edit3, Trash2, Check, Heart
+  Edit3, Trash2, Check, Heart, Camera, User
 } from 'lucide-react';
 import { useBooks } from '../contexts/BookContext';
-import { 
-  AVAILABLE_BADGES, 
-  SUGGESTED_CATEGORIES,
-  type HallOfFameData,
-  type Badge,
-  type CustomCategory,
-  type CustomRanking,
-  type AnnualAward,
+import type { 
+  HallOfFameData,
+  Badge,
+  CustomCategory,
+  CustomRanking,
+  AnnualAward,
 } from '../types/hallOfFame';
 import {
+  AVAILABLE_BADGES,
+  SUGGESTED_CATEGORIES,
   loadHallOfFame,
   saveHallOfFame,
   assignBadge,
@@ -36,6 +36,8 @@ import {
   deleteRanking,
   addToRanking,
   removeFromRanking,
+  setAuthorPhoto,
+  getAuthorPhoto,
 } from '../utils/hallOfFameStorage';
 import type { Reading } from '../types';
 
@@ -44,7 +46,7 @@ type TabType = 'awards' | 'badges' | 'rankings' | 'annual';
 // Spotlight animation component
 function Spotlight() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
       <div className="absolute -top-40 left-1/4 w-96 h-96 bg-gradient-to-b from-yellow-400/20 via-amber-300/10 to-transparent rounded-full blur-3xl animate-pulse" />
       <div className="absolute -top-40 right-1/4 w-96 h-96 bg-gradient-to-b from-yellow-400/20 via-amber-300/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-40 bg-gradient-to-b from-yellow-400/40 to-transparent" />
@@ -170,6 +172,74 @@ function BookSearchModal({
   );
 }
 
+// Author search modal for Author of the Year
+function AuthorSearchModal({ 
+  onSelect, 
+  onClose, 
+  authors,
+  title = 'Select an Author'
+}: { 
+  onSelect: (author: string) => void;
+  onClose: () => void;
+  authors: { name: string; bookCount: number; totalPages: number }[];
+  title?: string;
+}) {
+  const [search, setSearch] = useState('');
+  
+  const filtered = useMemo(() => {
+    const query = search.toLowerCase();
+    return authors
+      .filter(a => a.name.toLowerCase().includes(query))
+      .slice(0, 20);
+  }, [authors, search]);
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <GoldCard className="w-full max-w-lg" glow>
+        <div className="p-6 border-b border-yellow-500/20">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-yellow-400 font-serif">{title}</h3>
+            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-all">
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-yellow-500/50" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by author name..."
+              className="w-full pl-12 pr-4 py-3 bg-black/50 border-2 border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:border-yellow-400 focus:outline-none transition-all"
+              autoFocus
+            />
+          </div>
+        </div>
+        
+        <div className="max-h-96 overflow-y-auto p-2">
+          {filtered.length > 0 ? filtered.map(author => (
+            <button
+              key={author.name}
+              onClick={() => onSelect(author.name)}
+              className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-yellow-500/10 transition-all text-left group"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-600 to-amber-700 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white truncate group-hover:text-yellow-400 transition-colors">{author.name}</p>
+                <p className="text-sm text-gray-400">{author.bookCount} books · {author.totalPages.toLocaleString()} pages</p>
+              </div>
+            </button>
+          )) : (
+            <p className="text-center py-8 text-gray-500">No authors found</p>
+          )}
+        </div>
+      </GoldCard>
+    </div>
+  );
+}
+
 // Winner display component
 function WinnerCard({ book, categoryName, emoji }: { book: Reading; categoryName: string; emoji: string }) {
   return (
@@ -240,6 +310,15 @@ export function HallOfFameView() {
   const [newRankingName, setNewRankingName] = useState('');
   const [newRankingEmoji, setNewRankingEmoji] = useState('📊');
   const [newRankingDesc, setNewRankingDesc] = useState('');
+  
+  // Author modal states
+  const [showAuthorSearch, setShowAuthorSearch] = useState(false);
+  const [authorSearchYear, setAuthorSearchYear] = useState<number | null>(null);
+  
+  // Author photo modal states
+  const [showAuthorPhotoModal, setShowAuthorPhotoModal] = useState(false);
+  const [authorForPhoto, setAuthorForPhoto] = useState<string | null>(null);
+  const [authorPhotoUrl, setAuthorPhotoUrl] = useState('');
 
   useEffect(() => {
     saveHallOfFame(hofData);
@@ -260,6 +339,42 @@ export function HallOfFameView() {
     });
     return Array.from(years).sort((a, b) => b - a);
   }, [readings]);
+
+  // Get authors for a specific year
+  const getAuthorsByYear = (year: number) => {
+    const authorMap = new Map<string, { bookCount: number; totalPages: number }>();
+    
+    eligibleBooks.forEach(book => {
+      if (book.parsedDate?.getFullYear() === year) {
+        const existing = authorMap.get(book.author) || { bookCount: 0, totalPages: 0 };
+        authorMap.set(book.author, {
+          bookCount: existing.bookCount + 1,
+          totalPages: existing.totalPages + book.pages,
+        });
+      }
+    });
+    
+    return Array.from(authorMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.bookCount - a.bookCount || b.totalPages - a.totalPages);
+  };
+
+  const handleAuthorSelect = (authorName: string) => {
+    if (authorSearchYear) {
+      setHofData(prev => setAnnualAward(prev, authorSearchYear, 'author', authorName));
+    }
+    setShowAuthorSearch(false);
+    setAuthorSearchYear(null);
+  };
+
+  const handleSaveAuthorPhoto = () => {
+    if (authorForPhoto && authorPhotoUrl.trim()) {
+      setHofData(prev => setAuthorPhoto(prev, authorForPhoto, authorPhotoUrl.trim()));
+    }
+    setShowAuthorPhotoModal(false);
+    setAuthorForPhoto(null);
+    setAuthorPhotoUrl('');
+  };
 
   const handleBookSelect = (book: Reading) => {
     if (!searchContext) return;
@@ -311,13 +426,13 @@ export function HallOfFameView() {
   }), [hofData]);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="relative overflow-x-hidden">
       {/* Dramatic background */}
-      <div className="fixed inset-0 bg-gradient-to-b from-black via-gray-900 to-black -z-10" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-900/20 via-transparent to-transparent -z-10" />
+      <div className="fixed inset-0 bg-gradient-to-b from-black via-gray-900 to-black -z-10 pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-900/20 via-transparent to-transparent -z-10 pointer-events-none" />
       <Spotlight />
       
-      <div className="fixed inset-0 opacity-[0.015] -z-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
+      <div className="fixed inset-0 opacity-[0.015] -z-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
 
       <div className="relative space-y-8 pb-12">
         {/* Header */}
@@ -813,7 +928,10 @@ export function HallOfFameView() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {awardTypes.map(({ type, label, emoji }) => {
                             const award = awards.find(a => a.type === type);
-                            const book = award ? getBook(award.winnerId) : null;
+                            const isAuthorAward = type === 'author';
+                            const book = !isAuthorAward && award ? getBook(award.winnerId) : null;
+                            const authorName = isAuthorAward && award ? award.winnerId : null;
+                            const authorPhoto = authorName ? getAuthorPhoto(hofData, authorName) : null;
                             
                             return (
                               <div 
@@ -829,39 +947,91 @@ export function HallOfFameView() {
                                   <h4 className="font-bold text-white">{label}</h4>
                                 </div>
                                 
-                                {book ? (
-                                  <div className="flex items-center gap-4 group">
-                                    {book.coverUrl ? (
-                                      <img src={book.coverUrl} alt="" className="w-14 h-20 object-cover rounded-lg shadow" />
-                                    ) : (
-                                      <div className="w-14 h-20 bg-gray-800 rounded-lg flex items-center justify-center">
-                                        <BookOpen className="w-6 h-6 text-gray-600" />
+                                {/* Author of the Year - special handling */}
+                                {isAuthorAward ? (
+                                  authorName ? (
+                                    <div className="flex items-center gap-4 group">
+                                      <div className="relative">
+                                        {authorPhoto ? (
+                                          <img src={authorPhoto} alt={authorName} className="w-14 h-14 object-cover rounded-full shadow border-2 border-yellow-500/30" />
+                                        ) : (
+                                          <div className="w-14 h-14 bg-gradient-to-br from-yellow-600 to-amber-700 rounded-full flex items-center justify-center">
+                                            <User className="w-7 h-7 text-white" />
+                                          </div>
+                                        )}
+                                        <button
+                                          onClick={() => {
+                                            setAuthorForPhoto(authorName);
+                                            setAuthorPhotoUrl(authorPhoto || '');
+                                            setShowAuthorPhotoModal(true);
+                                          }}
+                                          className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 hover:bg-yellow-400 rounded-full flex items-center justify-center shadow-lg transition-colors"
+                                          title="Add/Edit photo"
+                                        >
+                                          <Camera className="w-3 h-3 text-black" />
+                                        </button>
                                       </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-semibold text-white truncate">{book.title}</p>
-                                      <p className="text-sm text-gray-400">{book.author}</p>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-white truncate">{authorName}</p>
+                                        <p className="text-sm text-gray-400">Author of the Year</p>
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          setAuthorSearchYear(year);
+                                          setShowAuthorSearch(true);
+                                        }}
+                                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-yellow-500/20 rounded-lg transition-all"
+                                      >
+                                        <Edit3 className="w-4 h-4 text-yellow-400" />
+                                      </button>
                                     </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setAuthorSearchYear(year);
+                                        setShowAuthorSearch(true);
+                                      }}
+                                      className="w-full py-4 text-center text-gray-500 hover:text-yellow-400 transition-colors"
+                                    >
+                                      + Select author
+                                    </button>
+                                  )
+                                ) : (
+                                  /* Book awards */
+                                  book ? (
+                                    <div className="flex items-center gap-4 group">
+                                      {book.coverUrl ? (
+                                        <img src={book.coverUrl} alt="" className="w-14 h-20 object-cover rounded-lg shadow" />
+                                      ) : (
+                                        <div className="w-14 h-20 bg-gray-800 rounded-lg flex items-center justify-center">
+                                          <BookOpen className="w-6 h-6 text-gray-600" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-white truncate">{book.title}</p>
+                                        <p className="text-sm text-gray-400">{book.author}</p>
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          setSearchContext({ type: 'annual', year, awardType: type });
+                                          setShowBookSearch(true);
+                                        }}
+                                        className="p-2 opacity-0 group-hover:opacity-100 hover:bg-yellow-500/20 rounded-lg transition-all"
+                                      >
+                                        <Edit3 className="w-4 h-4 text-yellow-400" />
+                                      </button>
+                                    </div>
+                                  ) : (
                                     <button
                                       onClick={() => {
                                         setSearchContext({ type: 'annual', year, awardType: type });
                                         setShowBookSearch(true);
                                       }}
-                                      className="p-2 opacity-0 group-hover:opacity-100 hover:bg-yellow-500/20 rounded-lg transition-all"
+                                      className="w-full py-4 text-center text-gray-500 hover:text-yellow-400 transition-colors"
                                     >
-                                      <Edit3 className="w-4 h-4 text-yellow-400" />
+                                      + Select winner
                                     </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      setSearchContext({ type: 'annual', year, awardType: type });
-                                      setShowBookSearch(true);
-                                    }}
-                                    className="w-full py-4 text-center text-gray-500 hover:text-yellow-400 transition-colors"
-                                  >
-                                    + Select winner
-                                  </button>
+                                  )
                                 )}
                               </div>
                             );
@@ -886,7 +1056,11 @@ export function HallOfFameView() {
       {/* Modals */}
       {showBookSearch && (
         <BookSearchModal
-          readings={eligibleBooks}
+          readings={
+            searchContext?.type === 'annual' && searchContext.year
+              ? eligibleBooks.filter(b => b.parsedDate?.getFullYear() === searchContext.year)
+              : eligibleBooks
+          }
           onSelect={handleBookSelect}
           onClose={() => {
             setShowBookSearch(false);
@@ -899,7 +1073,82 @@ export function HallOfFameView() {
                 ? hofData.rankings.find(r => r.id === searchContext.id)?.bookIds || []
                 : []
           }
+          title={
+            searchContext?.type === 'annual' && searchContext.year
+              ? `Select from books read in ${searchContext.year}`
+              : 'Select a Book'
+          }
         />
+      )}
+
+      {/* Author Search Modal */}
+      {showAuthorSearch && authorSearchYear && (
+        <AuthorSearchModal
+          authors={getAuthorsByYear(authorSearchYear)}
+          onSelect={handleAuthorSelect}
+          onClose={() => {
+            setShowAuthorSearch(false);
+            setAuthorSearchYear(null);
+          }}
+          title={`Select author from ${authorSearchYear}`}
+        />
+      )}
+
+      {/* Author Photo Modal */}
+      {showAuthorPhotoModal && authorForPhoto && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <GoldCard className="w-full max-w-md" glow>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-yellow-400 mb-2 font-serif">Author Photo</h3>
+              <p className="text-gray-400 mb-6">{authorForPhoto}</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Photo URL</label>
+                  <input
+                    type="url"
+                    value={authorPhotoUrl}
+                    onChange={(e) => setAuthorPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/author-photo.jpg"
+                    className="w-full px-4 py-3 bg-black/50 border-2 border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:border-yellow-400 focus:outline-none"
+                  />
+                </div>
+                
+                {authorPhotoUrl && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={authorPhotoUrl} 
+                      alt="Preview" 
+                      className="w-24 h-24 object-cover rounded-full border-2 border-yellow-500/30"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowAuthorPhotoModal(false);
+                    setAuthorForPhoto(null);
+                    setAuthorPhotoUrl('');
+                  }}
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-gray-300 font-semibold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAuthorPhoto}
+                  className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-xl text-black font-semibold transition-all"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </GoldCard>
+        </div>
       )}
 
       {showCreateCategory && (

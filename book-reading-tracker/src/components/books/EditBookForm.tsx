@@ -1,7 +1,8 @@
-// src/components/books/EditBookForm.tsx - COMPLETO
-import { useState } from 'react';
-import { X, GraduationCap, BookOpen } from 'lucide-react';
+// src/components/books/EditBookForm.tsx - WITH GOOGLE BOOKS SEARCH
+import { useState, useEffect } from 'react';
+import { X, GraduationCap, BookOpen, Search, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { searchGoogleBooks } from '../../utils/googleBooksAPI';
 import type { Reading, ReadingType } from '../../types';
 
 interface EditBookFormProps {
@@ -20,6 +21,14 @@ export function EditBookForm({
   existingNationalities = []
 }: EditBookFormProps) {
   const { t } = useLanguage();
+  
+  // Google Books search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchError, setSearchError] = useState<string>('');
+  
   const [formData, setFormData] = useState({
     title: book.title,
     author: book.author,
@@ -40,6 +49,49 @@ export function EditBookForm({
     totalChapters: book.totalChapters?.toString() || '',
     chaptersRead: book.chaptersRead?.join(', ') || '',
   });
+
+  // Debounced search
+  useEffect(() => {
+    if (searchQuery.length < 3) {
+      setSearchResults([]);
+      setSearchError('');
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      setSearchError('');
+      try {
+        const results = await searchGoogleBooks(searchQuery);
+        setSearchResults(results);
+        if (results.length === 0) {
+          setSearchError('No results found. Try a different search term.');
+        }
+      } catch (error: any) {
+        setSearchError(error.message || 'Error searching Google Books. Please try again later.');
+        setSearchResults([]);
+      }
+      setIsSearching(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSelectBook = (googleBook: any) => {
+    setFormData({
+      ...formData,
+      title: googleBook.title || formData.title,
+      author: googleBook.authors?.[0] || formData.author,
+      pages: googleBook.pageCount?.toString() || formData.pages,
+      isbn: googleBook.isbn || formData.isbn,
+      yearPublished: googleBook.publishedDate?.slice(0, 4) || formData.yearPublished,
+      coverUrl: googleBook.imageUrl || formData.coverUrl,
+      notes: formData.notes || googleBook.description?.slice(0, 500) || '',
+    });
+    setShowSearch(false);
+    setSearchResults([]);
+    setSearchQuery('');
+  };
 
   const handleSubmit = () => {
     if (!formData.title || !formData.author || !formData.pages || !formData.genre || !formData.nationality) {
@@ -125,6 +177,86 @@ export function EditBookForm({
         </div>
 
         <div className="p-8">
+          {/* Google Books Search Section */}
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                Update from Google Books
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowSearch(!showSearch)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  showSearch 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 hover:bg-blue-200'
+                }`}
+              >
+                {showSearch ? 'Hide Search' : 'Search Google Books'}
+              </button>
+            </div>
+            
+            {showSearch && (
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by title, author, or ISBN..."
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:bg-gray-700 dark:text-white transition-all"
+                  />
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-500 animate-spin" />
+                  )}
+                </div>
+                
+                {searchResults.length > 0 && (
+                  <div className="max-h-60 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700">
+                    {searchResults.map((result, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectBook(result)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all text-left border-b last:border-0 border-gray-100 dark:border-gray-600"
+                      >
+                        {result.imageUrl ? (
+                          <img src={result.imageUrl} alt="" className="w-10 h-14 object-cover rounded shadow" />
+                        ) : (
+                          <div className="w-10 h-14 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">{result.title}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {result.authors?.join(', ')} {result.publishedDate && `• ${result.publishedDate.slice(0, 4)}`}
+                          </p>
+                        </div>
+                        {result.pageCount && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{result.pageCount} pgs</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {searchError && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-sm text-red-600 dark:text-red-400">{searchError}</p>
+                    {searchError.includes('Rate limit') && (
+                      <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                        To fix this, add a Google Books API key to your .env file. See .env.example for instructions.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Tipo de lectura */}
           <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -175,14 +307,26 @@ export function EditBookForm({
                 <BookOpen className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-semibold">Referencia</div>
-                  <div className="text-xs opacity-75">Libro de consulta</div>
+                  <div className="text-xs opacity-75">Consulta parcial</div>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* Form Fields */}
+          {/* Main form */}
           <div className="space-y-4">
+            {/* Preview cover if exists */}
+            {formData.coverUrl && (
+              <div className="flex justify-center mb-4">
+                <img 
+                  src={formData.coverUrl} 
+                  alt="Cover preview" 
+                  className="h-32 object-cover rounded-lg shadow-lg"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -254,7 +398,7 @@ export function EditBookForm({
               </div>
             </div>
 
-            {/* Campos académicos */}
+            {/* Academic fields */}
             {isAcademic && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
                 <div className="md:col-span-2">

@@ -8,10 +8,42 @@ import type {
   CategoryNomination, 
   AnnualAward, 
   CustomRanking,
-  DEFAULT_HALL_OF_FAME 
+  Badge,
 } from '../types/hallOfFame';
 
 const STORAGE_KEY = 'hall_of_fame_data';
+
+// Predefined badges users can assign
+export const AVAILABLE_BADGES: Badge[] = [
+  { id: 'masterpiece', name: 'Masterpiece', emoji: '🏆', color: 'from-yellow-400 to-amber-500', description: 'An absolute masterpiece' },
+  { id: 'lifechanging', name: 'Life Changing', emoji: '✨', color: 'from-purple-400 to-pink-500', description: 'Changed how I see the world' },
+  { id: 'heartbreaker', name: 'Heartbreaker', emoji: '💔', color: 'from-red-400 to-rose-500', description: 'Emotionally devastating' },
+  { id: 'mindblown', name: 'Mind Blown', emoji: '🤯', color: 'from-cyan-400 to-blue-500', description: 'Expanded my mind' },
+  { id: 'couldntstop', name: "Couldn't Stop", emoji: '📖', color: 'from-green-400 to-emerald-500', description: 'Unputdownable' },
+  { id: 'beautifulprose', name: 'Beautiful Prose', emoji: '🎨', color: 'from-pink-400 to-purple-500', description: 'Exquisite writing' },
+  { id: 'perfectending', name: 'Perfect Ending', emoji: '🎬', color: 'from-amber-400 to-orange-500', description: 'Stuck the landing' },
+  { id: 'villain', name: 'Best Villain', emoji: '😈', color: 'from-gray-600 to-gray-800', description: 'Unforgettable antagonist' },
+  { id: 'hero', name: 'Best Hero', emoji: '🦸', color: 'from-blue-400 to-indigo-500', description: 'Inspiring protagonist' },
+  { id: 'worldbuilding', name: 'World Builder', emoji: '🌍', color: 'from-teal-400 to-cyan-500', description: 'Incredible world-building' },
+  { id: 'funny', name: 'Made Me Laugh', emoji: '😂', color: 'from-yellow-300 to-orange-400', description: 'Genuinely hilarious' },
+  { id: 'scary', name: 'Terrifying', emoji: '😱', color: 'from-gray-700 to-black', description: 'Kept me up at night' },
+  { id: 'reread', name: 'Will Reread', emoji: '🔄', color: 'from-indigo-400 to-purple-500', description: 'Definitely reading again' },
+  { id: 'underrated', name: 'Hidden Gem', emoji: '💎', color: 'from-sky-400 to-blue-500', description: 'Deserves more recognition' },
+  { id: 'overrated', name: 'Overrated', emoji: '📉', color: 'from-gray-400 to-gray-500', description: 'Did not live up to hype' },
+  { id: 'childhood', name: 'Childhood Favorite', emoji: '🧒', color: 'from-pink-300 to-rose-400', description: 'Nostalgic favorite' },
+];
+
+// Default categories to get started
+export const SUGGESTED_CATEGORIES: Omit<CustomCategory, 'id' | 'createdAt'>[] = [
+  { name: 'Best Plot Twist', emoji: '🔀', description: 'Most shocking twist' },
+  { name: 'Best Romance', emoji: '💕', description: 'Best love story' },
+  { name: 'Best Opening Line', emoji: '📝', description: 'Hooked from the first sentence' },
+  { name: 'Most Quotable', emoji: '💬', description: 'Full of memorable quotes' },
+  { name: 'Best Character Arc', emoji: '📈', description: 'Most satisfying character development' },
+  { name: 'Most Atmospheric', emoji: '🌫️', description: 'Best mood and atmosphere' },
+  { name: 'Best Audiobook', emoji: '🎧', description: 'Amazing narration' },
+  { name: 'Guilty Pleasure', emoji: '🍫', description: 'Not high art but loved it anyway' },
+];
 
 export function loadHallOfFame(): HallOfFameData {
   try {
@@ -25,6 +57,7 @@ export function loadHallOfFame(): HallOfFameData {
         nominations: data.nominations || [],
         annualAwards: data.annualAwards || [],
         rankings: data.rankings || [],
+        authorPhotos: data.authorPhotos || {},
       };
     }
   } catch (e) {
@@ -36,6 +69,7 @@ export function loadHallOfFame(): HallOfFameData {
     nominations: [],
     annualAwards: [],
     rankings: [],
+    authorPhotos: {},
   };
 }
 
@@ -235,4 +269,27 @@ export function reorderRanking(data: HallOfFameData, rankingId: string, fromInde
       return r;
     }),
   };
+}
+
+// Author photo operations
+export function setAuthorPhoto(data: HallOfFameData, authorName: string, photoUrl: string): HallOfFameData {
+  return {
+    ...data,
+    authorPhotos: {
+      ...data.authorPhotos,
+      [authorName]: photoUrl,
+    },
+  };
+}
+
+export function removeAuthorPhoto(data: HallOfFameData, authorName: string): HallOfFameData {
+  const { [authorName]: _, ...rest } = data.authorPhotos;
+  return {
+    ...data,
+    authorPhotos: rest,
+  };
+}
+
+export function getAuthorPhoto(data: HallOfFameData, authorName: string): string | undefined {
+  return data.authorPhotos[authorName];
 }

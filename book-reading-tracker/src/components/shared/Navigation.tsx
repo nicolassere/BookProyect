@@ -1,5 +1,5 @@
 // src/components/shared/Navigation.tsx - UPDATED with new views
-import { List, BarChart3, Users, Tag, Globe, Calendar, Crown, Clock, Scale, Library } from 'lucide-react';
+import { List, BarChart3, Users, Tag, Globe, Calendar, Trophy, Scale, Library } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface NavigationProps {
@@ -16,8 +16,7 @@ const navItems = [
   { id: 'sagas', icon: Library, labelKey: 'sagas' },
   { id: 'yearly-stats', icon: Calendar, labelKey: 'yearly-stats' },
   { id: 'publication-years', icon: Calendar, labelKey: 'publication-years' },
-  { id: 'influence', icon: Crown, labelKey: 'influence' },
-  { id: 'timeline', icon: Clock, labelKey: 'timeline' },
+  { id: 'hall-of-fame', icon: Trophy, labelKey: 'hall-of-fame' },
   { id: 'comparator', icon: Scale, labelKey: 'comparator' },
 ];
 
@@ -32,8 +31,7 @@ const extendedLabels: Record<string, Record<string, string>> = {
     sagas: 'Sagas',
     'yearly-stats': 'Yearly Stats',
     'publication-years': 'By Year Published',
-    influence: 'Influence',
-    timeline: 'Timeline',
+    'hall-of-fame': 'Hall of Fame',
     comparator: 'Compare',
   },
   es: {
@@ -45,8 +43,7 @@ const extendedLabels: Record<string, Record<string, string>> = {
     sagas: 'Sagas',
     'yearly-stats': 'Por Año',
     'publication-years': 'Año Publicación',
-    influence: 'Influencia',
-    timeline: 'Timeline',
+    'hall-of-fame': 'Hall of Fame',
     comparator: 'Comparar',
   },
 };
@@ -68,7 +65,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
             const isActive = activeView === item.id;
             
             // Highlight new features
-            const isNewFeature = ['influence', 'timeline', 'comparator', 'sagas'].includes(item.id);
+            const isNewFeature = ['hall-of-fame', 'comparator', 'sagas'].includes(item.id);
             
             return (
               <button
