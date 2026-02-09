@@ -49,10 +49,10 @@ export function AdvancedSearch({ readings, onResultsChange, onClose }: AdvancedS
 
     // Rating range
     if (filters.minRating) {
-      results = results.filter(r => r.rating && r.rating >= parseInt(filters.minRating));
+      results = results.filter(r => r.rating != null && r.rating >= parseFloat(filters.minRating));
     }
     if (filters.maxRating) {
-      results = results.filter(r => r.rating && r.rating <= parseInt(filters.maxRating));
+      results = results.filter(r => r.rating != null && r.rating <= parseFloat(filters.maxRating));
     }
 
     // Date range
@@ -186,7 +186,7 @@ export function AdvancedSearch({ readings, onResultsChange, onClose }: AdvancedS
                 className="px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
               >
                 <option value="">Mínimo</option>
-                {[1, 2, 3, 4, 5].map(n => (
+                {[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => (
                   <option key={n} value={n}>{n} ⭐</option>
                 ))}
               </select>
@@ -196,7 +196,7 @@ export function AdvancedSearch({ readings, onResultsChange, onClose }: AdvancedS
                 className="px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
               >
                 <option value="">Máximo</option>
-                {[1, 2, 3, 4, 5].map(n => (
+                {[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => (
                   <option key={n} value={n}>{n} ⭐</option>
                 ))}
               </select>

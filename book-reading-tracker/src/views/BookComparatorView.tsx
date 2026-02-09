@@ -1,7 +1,7 @@
 // src/views/BookComparatorView.tsx
 // Compare 2-3 books side by side with various metrics
 import { useState, useMemo } from 'react';
-import { Scale, BookOpen, Star, Clock, TrendingUp, X, Search, Plus, Trophy, Zap } from 'lucide-react';
+import { Scale, BookOpen, Star, StarHalf, Clock, TrendingUp, X, Search, Plus, Trophy, Zap } from 'lucide-react';
 import { useBooks } from '../contexts/BookContext';
 import { getGenreWeight } from '../utils/influenceCalculator';
 import type { Reading } from '../types';
@@ -258,11 +258,17 @@ export function BookComparatorView() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     {book.author}
                   </p>
-                  {book.rating && (
+                  {book.rating != null && book.rating > 0 && (
                     <div className="flex justify-center gap-0.5">
-                      {[...Array(book.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
+                      {[...Array(5)].map((_, i) => {
+                        if (i < Math.floor(book.rating!)) {
+                          return <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />;
+                        } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                          return <StarHalf key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />;
+                        } else {
+                          return <Star key={i} className="w-4 h-4 text-gray-300 dark:text-gray-600" />;
+                        }
+                      })}
                     </div>
                   )}
                 </div>

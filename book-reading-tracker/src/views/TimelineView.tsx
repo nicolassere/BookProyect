@@ -1,7 +1,7 @@
 // src/views/TimelineView.tsx
 // Visual timeline showing reading history chronologically
 import { useState, useMemo } from 'react';
-import { Calendar, BookOpen, Star, Clock, TrendingUp, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, BookOpen, Star, StarHalf, Clock, TrendingUp, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { useBooks } from '../contexts/BookContext';
 import { getGenreWeight } from '../utils/influenceCalculator';
 import type { Reading } from '../types';
@@ -334,11 +334,17 @@ export function TimelineView() {
                           <h4 className="font-bold text-gray-900 dark:text-white line-clamp-1">
                             {entry.book.title}
                           </h4>
-                          {entry.book.rating && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {[...Array(entry.book.rating)].map((_, i) => (
-                                <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              ))}
+                          {entry.book.rating != null && entry.book.rating > 0 && (
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              {[...Array(5)].map((_, i) => {
+                                if (i < Math.floor(entry.book.rating!)) {
+                                  return <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                } else if (i === Math.floor(entry.book.rating!) && entry.book.rating! % 1 > 0) {
+                                  return <StarHalf key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                } else {
+                                  return <Star key={i} className="w-3 h-3 text-gray-300 dark:text-gray-600" />;
+                                }
+                              })}
                             </div>
                           )}
                         </div>

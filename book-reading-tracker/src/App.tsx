@@ -160,7 +160,7 @@ function App() {
     }
     
     if (excludeUnrated) {
-      result = result.filter(r => r.rating && r.rating > 0);
+      result = result.filter(r => r.rating != null);
     }
     
     if (excludeYA) {

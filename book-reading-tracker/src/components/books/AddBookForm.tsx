@@ -119,7 +119,7 @@ export function AddBookForm({
       nationality: formData.nationality,
       dateFinished: formData.dateFinished,
       startDate: formData.startDate || undefined,
-      rating: formData.rating ? parseInt(formData.rating) : undefined,
+      rating: formData.rating ? parseFloat(formData.rating) : undefined,
       collections: formData.collections.split(',').map(c => c.trim()).filter(Boolean),
       timestamp: Date.now().toString(),
       isbn: formData.isbn || undefined,
@@ -463,12 +463,13 @@ export function AddBookForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t.forms.rating} (1-5)
+                  {t.forms.rating} (0-5)
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   max="5"
+                  step="0.1"
                   value={formData.rating}
                   onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:bg-gray-700 dark:text-white transition-all"

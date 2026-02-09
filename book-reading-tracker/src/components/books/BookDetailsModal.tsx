@@ -1,5 +1,5 @@
 // src/components/books/BookDetailsModal.tsx
-import { X, Edit2, Star, Calendar, BookOpen, Hash, Globe2, Heart, Trash2 } from 'lucide-react';
+import { X, Edit2, Star, StarHalf, Calendar, BookOpen, Hash, Globe2, Heart, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { Reading, AuthorProfile } from '../../types';
 
@@ -82,18 +82,17 @@ export function BookDetailsModal({
             <p className="text-xl text-gray-600 dark:text-gray-400">
               por <span className="font-semibold">{book.author}</span>
             </p>
-            {book.rating && (
+            {book.rating != null && (
               <div className="flex items-center gap-1 mt-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < book.rating!
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-gray-300 dark:text-gray-600'
-                    }`}
-                  />
-                ))}
+                {[...Array(5)].map((_, i) => {
+                  if (i < Math.floor(book.rating!)) {
+                    return <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />;
+                  } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                    return <StarHalf key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />;
+                  } else {
+                    return <Star key={i} className="w-5 h-5 text-gray-300 dark:text-gray-600" />;
+                  }
+                })}
                 <span className="ml-2 text-lg font-bold text-gray-700 dark:text-gray-300">
                   {book.rating}/5
                 </span>

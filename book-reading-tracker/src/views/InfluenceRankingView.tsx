@@ -365,7 +365,7 @@ export function InfluenceRankingView() {
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {book.pages} pgs • {book.genre}
-                                {book.rating && ` • ${book.rating}⭐`}
+                                {book.rating != null && book.rating > 0 && ` • ${book.rating}⭐`}
                               </p>
                             </div>
                           </div>

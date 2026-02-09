@@ -341,7 +341,7 @@ export function PublicationYearView() {
                         <span>{book.yearPublished}</span>
                         <span>•</span>
                         <span>{book.pages} pág.</span>
-                        {book.rating && (
+                        {book.rating != null && book.rating > 0 && (
                           <>
                             <span>•</span>
                             <span>⭐ {book.rating}</span>

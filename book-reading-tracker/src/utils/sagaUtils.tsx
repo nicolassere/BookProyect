@@ -158,7 +158,7 @@ function createSagaFromBooks(name: string, books: Reading[]): Saga {
   });
 
   // Calculate average rating (only rated books)
-  const ratedBooks = books.filter(b => b.rating && b.rating > 0);
+  const ratedBooks = books.filter(b => b.rating != null);
   const avgRating = ratedBooks.length > 0
     ? ratedBooks.reduce((sum, b) => sum + (b.rating || 0), 0) / ratedBooks.length
     : 0;
@@ -308,7 +308,7 @@ export function getAuthorStatsWithSagas(readings: Reading[]): AuthorSagaStats[] 
       weightedPages += b.pages * getGenreWeight(b.genre);
     });
 
-    const ratedBooks = books.filter(b => b.rating && b.rating > 0);
+    const ratedBooks = books.filter(b => b.rating != null);
     const avgRating = ratedBooks.length > 0
       ? ratedBooks.reduce((sum, b) => sum + (b.rating || 0), 0) / ratedBooks.length
       : 0;

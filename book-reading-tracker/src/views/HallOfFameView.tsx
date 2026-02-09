@@ -2,7 +2,7 @@
 // A spectacular, Oscar-night themed Hall of Fame for your books
 import { useState, useMemo, useEffect } from 'react';
 import { 
-  Trophy, Star, Crown, Award, Medal, Sparkles, Plus, X, Search, 
+  Trophy, Star, StarHalf, Crown, Award, Medal, Sparkles, Plus, X, Search,
   ChevronUp, ChevronDown, GripVertical, Calendar, BookOpen, Users,
   Edit3, Trash2, Check, Heart, Camera, User
 } from 'lucide-react';
@@ -155,11 +155,17 @@ function BookSearchModal({
                 <p className="font-semibold text-white truncate group-hover:text-yellow-400 transition-colors">{book.title}</p>
                 <p className="text-sm text-gray-400">{book.author}</p>
               </div>
-              {book.rating && (
+              {book.rating != null && book.rating > 0 && (
                 <div className="flex gap-0.5">
-                  {[...Array(book.rating)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  ))}
+                  {[...Array(5)].map((_, i) => {
+                    if (i < Math.floor(book.rating!)) {
+                      return <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />;
+                    } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                      return <StarHalf key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />;
+                    } else {
+                      return <Star key={i} className="w-3 h-3 text-gray-600" />;
+                    }
+                  })}
                 </div>
               )}
             </button>
@@ -272,11 +278,17 @@ function WinnerCard({ book, categoryName, emoji }: { book: Reading; categoryName
             <div className="flex-1 min-w-0">
               <h4 className="font-bold text-white text-lg leading-tight mb-1 font-serif">{book.title}</h4>
               <p className="text-yellow-400/80 text-sm">{book.author}</p>
-              {book.rating && (
-                <div className="flex gap-1 mt-2">
-                  {[...Array(book.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+              {book.rating != null && book.rating > 0 && (
+                <div className="flex gap-0.5 mt-2">
+                  {[...Array(5)].map((_, i) => {
+                    if (i < Math.floor(book.rating!)) {
+                      return <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
+                    } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                      return <StarHalf key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
+                    } else {
+                      return <Star key={i} className="w-4 h-4 text-gray-600" />;
+                    }
+                  })}
                 </div>
               )}
             </div>
@@ -856,11 +868,17 @@ export function HallOfFameView() {
                                     <p className="text-sm text-gray-400">{book.author}</p>
                                   </div>
                                   
-                                  {book.rating && (
+                                  {book.rating != null && book.rating > 0 && (
                                     <div className="flex gap-0.5">
-                                      {[...Array(book.rating)].map((_, i) => (
-                                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                      ))}
+                                      {[...Array(5)].map((_, i) => {
+                                        if (i < Math.floor(book.rating!)) {
+                                          return <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
+                                        } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                                          return <StarHalf key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />;
+                                        } else {
+                                          return <Star key={i} className="w-4 h-4 text-gray-600" />;
+                                        }
+                                      })}
                                     </div>
                                   )}
                                   

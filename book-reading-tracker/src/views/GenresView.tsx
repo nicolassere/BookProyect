@@ -1,6 +1,6 @@
 // src/views/GenresView.tsx - ENHANCED
 import { useState, useMemo } from 'react';
-import { Tag, TrendingUp, BookOpen, X, Star, ArrowUpDown } from 'lucide-react';
+import { Tag, TrendingUp, BookOpen, X, Star, StarHalf, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { Stats, Reading } from '../types';
 
@@ -327,13 +327,19 @@ export function GenresView({ stats, readings = [] }: GenresViewProps) {
                             <span>• {book.dateFinished}</span>
                           )}
                           
-                          {book.rating && (
+                          {book.rating != null && book.rating > 0 && (
                             <span className="flex items-center gap-1">
                               •
-                              <div className="flex">
-                                {[...Array(book.rating)].map((_, i) => (
-                                  <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                ))}
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => {
+                                  if (i < Math.floor(book.rating!)) {
+                                    return <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                  } else if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) {
+                                    return <StarHalf key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                  } else {
+                                    return <Star key={i} className="w-3 h-3 text-gray-300 dark:text-gray-600" />;
+                                  }
+                                })}
                               </div>
                             </span>
                           )}

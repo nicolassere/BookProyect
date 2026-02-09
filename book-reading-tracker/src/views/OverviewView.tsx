@@ -1,5 +1,5 @@
 // src/views/OverviewView.tsx - ENHANCED with Dark Mode
-import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, Award, Flame } from 'lucide-react';
+import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, StarHalf, Award, Flame } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatCard } from '../components/shared/StatCard';
 import type { Stats } from '../types';
@@ -236,10 +236,17 @@ export function OverviewView({ stats }: OverviewViewProps) {
           <div className="space-y-3">
             {stats.ratingDistribution.map((rating, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="flex items-center gap-1 w-24">
-                  {[...Array(rating.rating)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
+                <div className="flex items-center gap-0.5 w-28">
+                  {[...Array(5)].map((_, j) => {
+                    if (j < Math.floor(rating.rating)) {
+                      return <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />;
+                    } else if (j === Math.floor(rating.rating) && rating.rating % 1 > 0) {
+                      return <StarHalf key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />;
+                    } else {
+                      return <Star key={j} className="w-4 h-4 text-gray-300 dark:text-gray-600" />;
+                    }
+                  })}
+                  <span className="text-xs text-gray-500 ml-1">{rating.rating}</span>
                 </div>
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
                   <div

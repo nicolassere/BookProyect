@@ -38,7 +38,7 @@ export function parseGoodreadsCSV(csvText: string): Reading[] {
     const pages = parseInt(pagesStr) || 0;
     const dateRead = getField('Date Read');
     const ratingStr = getField('My Rating');
-    const rating = ratingStr ? parseInt(ratingStr) : undefined;
+    const rating = ratingStr ? parseFloat(ratingStr) : undefined;
     const bookshelves = getField('Bookshelves');
     const isbn = getField('ISBN13') || getField('ISBN');
     const yearPublishedStr = getField('Year Published') || getField('Original Publication Year');

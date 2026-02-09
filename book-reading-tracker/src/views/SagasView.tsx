@@ -477,7 +477,7 @@ export function SagasView() {
                                   {book.yearPublished && ` • ${book.yearPublished}`}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  {book.rating && (
+                                  {book.rating != null && book.rating > 0 && (
                                     <span className="text-xs flex items-center gap-0.5">
                                       {book.rating}<Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                                     </span>

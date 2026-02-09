@@ -24,7 +24,7 @@ export function calculateStats(
     }
     const authorData = authorBooks.get(reading.author)!;
     authorData.count++;
-    if (reading.rating) {
+    if (reading.rating != null) {
       authorData.totalRating += reading.rating;
       authorData.ratedCount++;
     }
@@ -50,7 +50,7 @@ export function calculateStats(
     const genreData = genreCounts.get(reading.genre)!;
     genreData.count++;
     genreData.pages += reading.pages;
-    if (reading.rating) {
+    if (reading.rating != null) {
       genreData.totalRating += reading.rating;
       genreData.ratedCount++;
     }
@@ -72,7 +72,7 @@ export function calculateStats(
     }
 
     // Rating distribution
-    if (reading.rating) {
+    if (reading.rating != null) {
       ratingDist.set(reading.rating, (ratingDist.get(reading.rating) || 0) + 1);
     }
   });
@@ -126,7 +126,7 @@ export function calculateStats(
   const favoriteBooks = readings.filter(r => r.rating === 5 || r.favorite);
 
   // Calculate average rating
-  const ratedBooks = readings.filter(r => r.rating);
+  const ratedBooks = readings.filter(r => r.rating != null);
   const averageRating = ratedBooks.length > 0
     ? ratedBooks.reduce((sum, r) => sum + (r.rating || 0), 0) / ratedBooks.length
     : 0;
