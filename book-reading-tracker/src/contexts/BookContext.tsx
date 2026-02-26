@@ -59,6 +59,32 @@ export function BookProvider({ children }: { children: ReactNode }) {
             api.authors.list(),
           ]);
 
+          // Auto-migrate: if backend is empty but localStorage has data, push it up
+          if (apiBooks.length === 0) {
+            const storedRaw = localStorage.getItem('book_readings');
+            if (storedRaw) {
+              const localReadings: Reading[] = JSON.parse(storedRaw);
+              if (localReadings.length > 0) {
+                const storedProfilesRaw = localStorage.getItem('author_profiles');
+                const localProfiles: AuthorProfile[] = storedProfilesRaw
+                  ? (JSON.parse(storedProfilesRaw) as [string, AuthorProfile][]).map(([, p]) => p)
+                  : [];
+                await api.import.json(localReadings, localProfiles, false);
+                // Reload from backend so IDs are canonical
+                const [migrated, migratedProfiles] = await Promise.all([
+                  api.books.list(),
+                  api.authors.list(),
+                ]);
+                setReadings(migrated.map(attachParsedDate));
+                const pm = new Map<string, AuthorProfile>();
+                migratedProfiles.forEach(p => pm.set(p.name, p));
+                setAuthorProfiles(pm);
+                setIsLoading(false);
+                return;
+              }
+            }
+          }
+
           setReadings(apiBooks.map(attachParsedDate));
 
           const profilesMap = new Map<string, AuthorProfile>();

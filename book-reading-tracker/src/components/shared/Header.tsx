@@ -70,10 +70,6 @@ export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
                 >
                   <Download className="w-4 h-4" />
                 </button>
-                <label className="p-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all cursor-pointer" title={t.header.importJSON}>
-                  <Upload className="w-4 h-4" />
-                  <input type="file" accept=".json" onChange={onJSONImport} className="hidden" />
-                </label>
                 <button
                   onClick={handleClearAll}
                   className="p-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all"
@@ -83,7 +79,13 @@ export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
                 </button>
               </>
             )}
-            
+
+            {/* Import buttons always visible so you can restore data from an empty state */}
+            <label className="p-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all cursor-pointer" title={t.header.importJSON}>
+              <Upload className="w-4 h-4" />
+              <input type="file" accept=".json" onChange={onJSONImport} className="hidden" />
+            </label>
+
             <label className="px-3 py-2 border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all cursor-pointer text-sm font-medium flex items-center gap-2" title={t.header.importCSV}>
               <Upload className="w-4 h-4" />
               CSV
