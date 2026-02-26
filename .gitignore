@@ -27,3 +27,14 @@ package-lock.json
 package-lock.json
 yarn.lock
 .pnpm-lock.yaml
+
+# Python backend
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/books.db
+backend/books.db-shm
+backend/books.db-wal
+*.pyc
+__pycache__/
