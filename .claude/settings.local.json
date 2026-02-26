@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.googleapis.com)"
+      "WebFetch(domain:www.googleapis.com)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(python -m py_compile main.py database.py models.py schemas.py routers/books.py routers/authors.py routers/goals.py routers/export.py utils/helpers.py)"
     ]
   }
 }

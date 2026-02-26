@@ -68,6 +68,7 @@ function App() {
   const {
     readings,
     authorProfiles,
+    isLoading,
     addReading,
     updateReading,
     deleteReading,
@@ -93,39 +94,20 @@ function App() {
   const [excludeYA, setExcludeYA] = useState(true);
   
   // App State
-  const [isLoaded, setIsLoaded] = useState(false);
   const [readingGoal, setReadingGoal] = useState<ReadingGoal | null>(null);
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  // Load data on mount
+  // Load reading goal from localStorage on mount (goal is UI-only state)
   useEffect(() => {
-    const storedReadings = storage.loadReadings();
     const storedGoal = storage.loadGoal();
-    
-    if (storedReadings.length > 0) {
-      importReadings(storedReadings, true);
-    }
-    if (storedGoal) {
-      setReadingGoal(storedGoal);
-    }
-    setIsLoaded(true);
-  }, [importReadings]);
-
-  // Save data when it changes
-  useEffect(() => {
-    if (isLoaded && readings.length > 0) {
-      storage.saveReadings(readings);
-      storage.saveProfiles(authorProfiles);
-    }
-  }, [readings, authorProfiles, isLoaded]);
+    if (storedGoal) setReadingGoal(storedGoal);
+  }, []);
 
   // Save goal when it changes
   useEffect(() => {
-    if (isLoaded && readingGoal) {
-      storage.saveGoal(readingGoal);
-    }
-  }, [readingGoal, isLoaded]);
+    if (readingGoal) storage.saveGoal(readingGoal);
+  }, [readingGoal]);
 
   // Reset filters when book type changes
   useEffect(() => {
@@ -354,7 +336,11 @@ function App() {
           </div>
         )}
 
-        {readings.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-32 text-gray-500 dark:text-gray-400">
+            <span className="text-lg">Cargando…</span>
+          </div>
+        ) : readings.length === 0 ? (
           <WelcomeScreen onAddFirst={() => setShowAddForm(true)} />
         ) : activeView === 'overview' ? (
           <div className="space-y-6">
