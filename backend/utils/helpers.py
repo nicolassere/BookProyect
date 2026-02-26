@@ -27,6 +27,7 @@ def book_to_dict(book: Book) -> dict:
         "academic_level": book.academic_level,
         "chapters_read": json.loads(book.chapters_read) if book.chapters_read else None,
         "total_chapters": book.total_chapters,
+        "status": book.status,
     }
 
 
@@ -55,4 +56,5 @@ def dict_to_book_kwargs(data, book_id: str) -> dict:
         "academic_level": data.academic_level,
         "chapters_read": json.dumps(data.chapters_read) if data.chapters_read is not None else None,
         "total_chapters": data.total_chapters,
+        "status": data.status,
     }

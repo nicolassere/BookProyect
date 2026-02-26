@@ -85,10 +85,19 @@ def update_book(book_id: str, book: BookCreate, db: Session = Depends(get_db)):
         json.dumps(book.chapters_read) if book.chapters_read is not None else None
     )
     db_book.total_chapters = book.total_chapters
+    db_book.status = book.status
 
     db.commit()
     db.refresh(db_book)
     return book_to_dict(db_book)
+
+
+@router.delete("/all", summary="Delete every book in the database")
+def delete_all_books(db: Session = Depends(get_db)):
+    count = db.query(Book).count()
+    db.query(Book).delete()
+    db.commit()
+    return {"message": f"Deleted {count} books", "count": count}
 
 
 @router.delete("/{book_id}")

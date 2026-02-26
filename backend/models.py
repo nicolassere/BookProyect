@@ -27,6 +27,7 @@ class Book(Base):
     academic_level = Column(String, nullable=True)  # undergraduate | graduate | reference
     chapters_read = Column(Text, nullable=True)     # JSON array of ints
     total_chapters = Column(Integer, nullable=True)
+    status = Column(String, nullable=True)          # reading | completed | abandoned | want-to-read
 
 
 class AuthorProfile(Base):

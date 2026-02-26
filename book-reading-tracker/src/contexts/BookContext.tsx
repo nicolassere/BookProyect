@@ -23,6 +23,7 @@ interface BookContextType {
   deleteReading: (id: string) => void;
   updateAuthorProfile: (profile: AuthorProfile) => void;
   importReadings: (readings: Reading[], replace?: boolean) => void;
+  clearAllReadings: () => void;
   migrateFromLocalStorage: () => Promise<{ imported: number }>;
 }
 
@@ -239,6 +240,18 @@ export function BookProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const clearAllReadings = useCallback(() => {
+    setReadings([]);
+    setAuthorProfiles(new Map());
+    localStorage.removeItem('book_readings');
+    localStorage.removeItem('author_profiles');
+    if (backendRef.current) {
+      api.books.deleteAll().catch(err =>
+        console.error('Failed to clear books from backend:', err),
+      );
+    }
+  }, []);
+
   /**
    * One-time migration: sends all current localStorage data to the backend.
    * Call this when the user first enables the backend.
@@ -275,6 +288,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
         deleteReading,
         updateAuthorProfile,
         importReadings,
+        clearAllReadings,
         migrateFromLocalStorage,
       }}
     >

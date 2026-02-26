@@ -37,6 +37,7 @@ function toPayload(r: Reading | Omit<Reading, 'id' | 'parsedDate'>) {
     academic_level: r.academicLevel,
     chapters_read: r.chaptersRead,
     total_chapters: r.totalChapters,
+    status: r.status,
   };
 }
 
@@ -67,6 +68,7 @@ function fromPayload(p: any): Reading {
     academicLevel: p.academic_level,
     chaptersRead: p.chapters_read,
     totalChapters: p.total_chapters,
+    status: p.status,
   };
 }
 
@@ -151,6 +153,10 @@ export const api = {
 
     delete: async (id: string): Promise<void> => {
       await apiFetch(`/books/${id}`, { method: 'DELETE' });
+    },
+
+    deleteAll: async (): Promise<void> => {
+      await apiFetch('/books/all', { method: 'DELETE' });
     },
   },
 

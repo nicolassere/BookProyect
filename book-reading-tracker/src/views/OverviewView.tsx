@@ -1,6 +1,7 @@
 // src/views/OverviewView.tsx - ENHANCED with Dark Mode
-import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, StarHalf, Award, Flame } from 'lucide-react';
+import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, StarHalf, Award, Flame, BookMarked, Calendar, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBooks } from '../contexts/BookContext';
 import { StatCard } from '../components/shared/StatCard';
 import type { Stats } from '../types';
 
@@ -10,9 +11,93 @@ interface OverviewViewProps {
 
 export function OverviewView({ stats }: OverviewViewProps) {
   const { t } = useLanguage();
+  const { readings, updateReading } = useBooks();
+
+  const finishBook = (id: string) => {
+    const book = readings.find(r => r.id === id);
+    if (!book) return;
+    updateReading({
+      ...book,
+      status: 'completed',
+      dateFinished: new Date().toISOString().split('T')[0],
+      parsedDate: new Date(),
+    });
+  };
+
+  const currentlyReading = readings.filter(r => r.status === 'reading');
+
+  const daysSince = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const diff = Date.now() - new Date(dateStr).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
 
   return (
     <div className="space-y-6">
+
+      {/* Currently Reading */}
+      {currentlyReading.length > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-6 border-2 border-emerald-200 dark:border-emerald-800">
+          <h3 className="text-lg font-bold text-emerald-800 dark:text-emerald-300 mb-4 flex items-center gap-2">
+            <BookMarked className="w-5 h-5" />
+            Leyendo ahora
+            <span className="ml-1 px-2 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm rounded-full font-semibold">
+              {currentlyReading.length}
+            </span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {currentlyReading.map(book => {
+              const days = daysSince(book.startDate);
+              const progress = book.totalChapters && book.chaptersRead?.length
+                ? Math.round((book.chaptersRead.length / book.totalChapters) * 100)
+                : null;
+              return (
+                <div key={book.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-emerald-100 dark:border-emerald-900 flex gap-3">
+                  {book.coverUrl ? (
+                    <img src={book.coverUrl} alt={book.title} className="w-12 h-16 object-cover rounded-lg flex-shrink-0 shadow" />
+                  ) : (
+                    <div className="w-12 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Book className="w-6 h-6 text-emerald-500" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight truncate">{book.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{book.author}</p>
+                    {days !== null && (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {days === 0 ? 'Hoy' : `Hace ${days} día${days === 1 ? '' : 's'}`}
+                      </p>
+                    )}
+                    {progress !== null && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <span>{book.chaptersRead!.length}/{book.totalChapters} caps.</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                          <div
+                            className="h-1.5 bg-emerald-500 rounded-full transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => finishBook(book.id)}
+                    title="Marcar como terminado hoy"
+                    className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-all"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Terminé este libro
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard

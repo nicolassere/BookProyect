@@ -9,7 +9,7 @@ class BookCreate(BaseModel):
     pages: int
     genre: str
     nationality: str
-    date_finished: str
+    date_finished: Optional[str] = None   # Optional: not required for 'reading' status books
     timestamp: Optional[str] = None
     rating: Optional[float] = None
     collections: List[str] = []
@@ -25,6 +25,7 @@ class BookCreate(BaseModel):
     academic_level: Optional[Literal["undergraduate", "graduate", "reference"]] = None
     chapters_read: Optional[List[int]] = None
     total_chapters: Optional[int] = None
+    status: Optional[str] = None          # reading | completed | abandoned | want-to-read
 
 
 class BookResponse(BookCreate):

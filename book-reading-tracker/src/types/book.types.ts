@@ -1,4 +1,5 @@
 export type ReadingType = 'complete' | 'academic' | 'reference';
+export type ReadingStatus = 'reading' | 'completed' | 'abandoned' | 'want-to-read';
 
 export interface Reading {
   id: string;
@@ -7,7 +8,7 @@ export interface Reading {
   pages: number;
   genre: string;
   nationality: string;
-  dateFinished: string;
+  dateFinished?: string;        // Optional: not set for 'reading' status books
   timestamp?: string;
   parsedDate?: Date | null;
   rating?: number;
@@ -15,16 +16,17 @@ export interface Reading {
   isbn?: string;
   yearPublished?: number;
   readCount?: number;
-  readingType?: ReadingType; // 'complete' por defecto, 'academic' para libros académicos/referencia
+  readingType?: ReadingType;
   coverUrl?: string;
   notes?: string;
   startDate?: string;
   favorite?: boolean;
-  // Campos específicos para libros académicos
-  academicField?: string; // Campo de estudio (ej: "Matemáticas", "Física", etc.)
-  academicLevel?: 'undergraduate' | 'graduate' | 'reference'; // Nivel académico
-  chaptersRead?: number[]; // Capítulos leídos (para libros que no se leen completos)
-  totalChapters?: number; // Total de capítulos
+  status?: ReadingStatus;       // reading | completed | abandoned | want-to-read
+  // Academic-specific fields
+  academicField?: string;
+  academicLevel?: 'undergraduate' | 'graduate' | 'reference';
+  chaptersRead?: number[];
+  totalChapters?: number;
 }
 
 export interface BookFormData {
@@ -44,5 +46,3 @@ export interface BookFormData {
   chaptersRead?: string;
   totalChapters?: string;
 }
-
-

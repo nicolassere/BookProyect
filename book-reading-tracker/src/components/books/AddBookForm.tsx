@@ -1,6 +1,6 @@
 // src/components/books/AddBookForm.tsx - CON SOPORTE ACADÉMICO
 import { useState, useEffect } from 'react';
-import { Search, BookOpen, X, GraduationCap } from 'lucide-react';
+import { Search, BookOpen, X, GraduationCap, BookMarked } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { searchGoogleBooks } from '../../utils/googleBooksAPI';
 import type { Reading, ReadingType } from '../../types';
@@ -24,6 +24,7 @@ export function AddBookForm({
   const [isSearching, setIsSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
   const [searchError, setSearchError] = useState<string>('');
+  const [isCurrentlyReading, setIsCurrentlyReading] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -96,13 +97,11 @@ export function AddBookForm({
       return;
     }
 
-    // Validación para libros académicos
     if (formData.readingType === 'academic' && !formData.academicField) {
       alert('Por favor especifica el campo académico para libros académicos');
       return;
     }
 
-    // Parsear capítulos leídos si están especificados
     let chaptersRead: number[] | undefined;
     if (formData.chaptersRead) {
       chaptersRead = formData.chaptersRead
@@ -117,7 +116,7 @@ export function AddBookForm({
       pages: parseInt(formData.pages),
       genre: formData.genre,
       nationality: formData.nationality,
-      dateFinished: formData.dateFinished,
+      dateFinished: isCurrentlyReading ? undefined : formData.dateFinished,
       startDate: formData.startDate || undefined,
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       collections: formData.collections.split(',').map(c => c.trim()).filter(Boolean),
@@ -126,12 +125,12 @@ export function AddBookForm({
       yearPublished: formData.yearPublished ? parseInt(formData.yearPublished) : undefined,
       coverUrl: formData.coverUrl || undefined,
       notes: formData.notes || undefined,
-      readCount: 1,
+      readCount: isCurrentlyReading ? 0 : 1,
       readingType: formData.readingType,
-      // Campos académicos
+      status: isCurrentlyReading ? 'reading' : 'completed',
       academicField: formData.readingType === 'academic' ? formData.academicField : undefined,
-      academicLevel: formData.readingType === 'academic' && formData.academicLevel 
-        ? formData.academicLevel 
+      academicLevel: formData.readingType === 'academic' && formData.academicLevel
+        ? formData.academicLevel
         : undefined,
       totalChapters: formData.totalChapters ? parseInt(formData.totalChapters) : undefined,
       chaptersRead,
@@ -157,6 +156,29 @@ export function AddBookForm({
         </div>
 
         <div className="p-8">
+          {/* Leyendo ahora toggle */}
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setIsCurrentlyReading(v => !v)}
+              className={`w-full flex items-center justify-between px-5 py-3 rounded-xl border-2 font-medium transition-all ${
+                isCurrentlyReading
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-emerald-300'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <BookMarked className="w-5 h-5" />
+                {isCurrentlyReading ? 'Leyendo ahora (sin fecha de fin)' : 'Marcar como "Leyendo ahora"'}
+              </span>
+              <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                isCurrentlyReading ? 'border-emerald-500 bg-emerald-500' : 'border-gray-400'
+              }`}>
+                {isCurrentlyReading && <span className="w-2 h-2 rounded-full bg-white" />}
+              </span>
+            </button>
+          </div>
+
           {/* Tipo de lectura */}
           <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -449,17 +471,19 @@ export function AddBookForm({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t.forms.dateFinished} *
-                </label>
-                <input
-                  type="date"
-                  value={formData.dateFinished}
-                  onChange={(e) => setFormData({ ...formData, dateFinished: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:bg-gray-700 dark:text-white transition-all"
-                />
-              </div>
+              {!isCurrentlyReading && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t.forms.dateFinished} *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateFinished}
+                    onChange={(e) => setFormData({ ...formData, dateFinished: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:bg-gray-700 dark:text-white transition-all"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
