@@ -9,7 +9,11 @@ import { getGenreWeight } from '../utils/influenceCalculator';
 type ViewMode = 'all' | 'ranking';
 type SortBy = 'pages' | 'books' | 'rating' | 'influence';
 
-export function SagasView() {
+interface SagasViewProps {
+  onBookClick?: (book: import('../types').Reading) => void;
+}
+
+export function SagasView({ onBookClick }: SagasViewProps = {}) {
   const { readings } = useBooks();
   const [viewMode, setViewMode] = useState<ViewMode>('ranking');
   const [sortBy, setSortBy] = useState<SortBy>('influence');
@@ -454,9 +458,10 @@ export function SagasView() {
                           const genreWeight = getGenreWeight(book.genre);
                           
                           return (
-                            <div 
+                            <div
                               key={book.id}
-                              className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                              onClick={() => onBookClick?.(book)}
+                              className={`flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700${onBookClick ? ' cursor-pointer hover:border-violet-400 dark:hover:border-violet-600 transition-colors' : ''}`}
                             >
                               <div className="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center text-violet-700 dark:text-violet-300 font-bold text-sm flex-shrink-0">
                                 {bookIdx + 1}

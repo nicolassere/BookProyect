@@ -3,6 +3,7 @@ import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, StarHalf, Award, 
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBooks } from '../contexts/BookContext';
 import { StatCard } from '../components/shared/StatCard';
+import { ReadingHeatmap } from '../components/charts/ReadingHeatmap';
 import type { Stats } from '../types';
 
 interface OverviewViewProps {
@@ -125,6 +126,9 @@ export function OverviewView({ stats }: OverviewViewProps) {
           color="from-amber-500 to-amber-600"
         />
       </div>
+
+      {/* Reading Activity Heatmap */}
+      <ReadingHeatmap readings={readings} />
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

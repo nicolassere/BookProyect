@@ -1,6 +1,7 @@
 // src/components/shared/Navigation.tsx - UPDATED with new views
 import { List, BarChart3, Users, Tag, Globe, Calendar, Trophy, Scale, Library } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useBooks } from '../../contexts/BookContext';
 
 interface NavigationProps {
   activeView: string;
@@ -49,7 +50,9 @@ const extendedLabels: Record<string, Record<string, string>> = {
 };
 
 export function Navigation({ activeView, onViewChange }: NavigationProps) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
+  const { readings } = useBooks();
+  const currentlyReadingCount = readings.filter(r => r.status === 'reading').length;
 
   const getLabel = (key: string) => {
     // Try to get from extended labels first
@@ -79,6 +82,11 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
               >
                 <Icon className="w-4 h-4" />
                 {getLabel(item.labelKey)}
+                {item.id === 'overview' && currentlyReadingCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full leading-none">
+                    {currentlyReadingCount}
+                  </span>
+                )}
                 {isNewFeature && !isActive && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
                 )}

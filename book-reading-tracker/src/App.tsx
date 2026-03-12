@@ -2,10 +2,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useBooks } from './contexts/BookContext';
-import { storage } from './utils/storage';
 import { parseGoodreadsCSV } from './utils/csvParser';
 import { calculateStats } from './utils/statsCalculator';
-import type { Reading, ReadingGoal, UndoAction } from './types';
+import type { Reading, UndoAction } from './types';
 
 // Components
 import { Header } from './components/shared/Header';
@@ -74,6 +73,10 @@ function App() {
     deleteReading,
     updateAuthorProfile,
     importReadings,
+    readingGoal,
+    setReadingGoal,
+    syncError,
+    clearSyncError,
   } = useBooks();
 
   // UI State
@@ -94,20 +97,8 @@ function App() {
   const [excludeYA, setExcludeYA] = useState(true);
   
   // App State
-  const [readingGoal, setReadingGoal] = useState<ReadingGoal | null>(null);
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
   const [showToast, setShowToast] = useState(false);
-
-  // Load reading goal from localStorage on mount (goal is UI-only state)
-  useEffect(() => {
-    const storedGoal = storage.loadGoal();
-    if (storedGoal) setReadingGoal(storedGoal);
-  }, []);
-
-  // Save goal when it changes
-  useEffect(() => {
-    if (readingGoal) storage.saveGoal(readingGoal);
-  }, [readingGoal]);
 
   // Reset filters when book type changes
   useEffect(() => {
@@ -373,13 +364,14 @@ function App() {
               setSelectedAuthor(author);
               setShowAuthorEditor(true);
             }}
+            onBookClick={handleBookClick}
           />
         ) : activeView === 'genres' ? (
-          <GenresView stats={filteredStats} readings={filteredReadings} />
+          <GenresView stats={filteredStats} readings={filteredReadings} onBookClick={handleBookClick} />
         ) : activeView === 'nationalities' ? (
-          <NationalitiesView stats={filteredStats} readings={filteredReadings} />
+          <NationalitiesView stats={filteredStats} readings={filteredReadings} onBookClick={handleBookClick} />
         ) : activeView === 'sagas' ? (
-          <SagasView />
+          <SagasView onBookClick={handleBookClick} />
         ) : activeView === 'yearly-stats' ? (
           <YearlyStatsView />
         ) : activeView === 'publication-years' ? (
@@ -458,6 +450,14 @@ function App() {
             setShowToast(false);
             setUndoAction(null);
           }}
+        />
+      )}
+
+      {/* Sync error toast */}
+      {syncError && (
+        <Toast
+          message={syncError}
+          onClose={clearSyncError}
         />
       )}
     </div>

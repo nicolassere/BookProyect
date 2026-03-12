@@ -8,9 +8,10 @@ import {
   useRef,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { Reading, AuthorProfile, Stats } from '../types';
+import type { Reading, AuthorProfile, Stats, ReadingGoal } from '../types';
 import { calculateStats } from '../utils/statsCalculator';
 import { api } from '../utils/api';
+import { storage } from '../utils/storage';
 
 interface BookContextType {
   readings: Reading[];
@@ -18,6 +19,10 @@ interface BookContextType {
   stats: Stats;
   isLoading: boolean;
   backendAvailable: boolean;
+  readingGoal: ReadingGoal | null;
+  setReadingGoal: (goal: ReadingGoal) => void;
+  syncError: string | null;
+  clearSyncError: () => void;
   addReading: (reading: Omit<Reading, 'id' | 'parsedDate'>) => void;
   updateReading: (reading: Reading) => void;
   deleteReading: (id: string) => void;
@@ -38,6 +43,10 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const [authorProfiles, setAuthorProfiles] = useState<Map<string, AuthorProfile>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [backendAvailable, setBackendAvailable] = useState(false);
+  const [readingGoal, setReadingGoalState] = useState<ReadingGoal | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const clearSyncError = useCallback(() => setSyncError(null), []);
 
   // Keep a ref so callbacks can read the latest value without stale closures
   const backendRef = useRef(false);
@@ -55,9 +64,11 @@ export function BookProvider({ children }: { children: ReactNode }) {
         backendRef.current = available;
 
         if (available) {
-          const [apiBooks, apiProfiles] = await Promise.all([
+          const currentYear = new Date().getFullYear();
+          const [apiBooks, apiProfiles, apiGoal] = await Promise.all([
             api.books.list(),
             api.authors.list(),
+            api.goals.get(currentYear),
           ]);
 
           // Auto-migrate: if backend is empty but localStorage has data, push it up
@@ -91,6 +102,14 @@ export function BookProvider({ children }: { children: ReactNode }) {
           const profilesMap = new Map<string, AuthorProfile>();
           apiProfiles.forEach(p => profilesMap.set(p.name, p));
           setAuthorProfiles(profilesMap);
+
+          // Set goal from backend, fall back to localStorage if not found
+          if (apiGoal) {
+            setReadingGoalState(apiGoal);
+          } else {
+            const localGoal = storage.loadGoal();
+            if (localGoal) setReadingGoalState(localGoal);
+          }
         } else {
           // Offline – fall back to localStorage
           const stored = localStorage.getItem('book_readings');
@@ -103,6 +122,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
             const arr = JSON.parse(storedProfiles) as [string, AuthorProfile][];
             setAuthorProfiles(new Map(arr));
           }
+          const localGoal = storage.loadGoal();
+          if (localGoal) setReadingGoalState(localGoal);
         }
       } catch (err) {
         console.error('BookContext: failed to load data', err);
@@ -156,9 +177,10 @@ export function BookProvider({ children }: { children: ReactNode }) {
 
       // Persist to backend (fire-and-forget)
       if (backendRef.current) {
-        api.books.create(reading).catch(err =>
-          console.error('Failed to persist book to backend:', err),
-        );
+        api.books.create(reading).catch(err => {
+          console.error('Failed to persist book to backend:', err);
+          setSyncError('Error syncing with server — changes saved locally');
+        });
       }
 
       // Auto-create author profile if first book from this author
@@ -185,18 +207,20 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const updateReading = useCallback((updated: Reading) => {
     setReadings(prev => prev.map(r => (r.id === updated.id ? updated : r)));
     if (backendRef.current) {
-      api.books.update(updated.id, updated).catch(err =>
-        console.error('Failed to update book in backend:', err),
-      );
+      api.books.update(updated.id, updated).catch(err => {
+        console.error('Failed to update book in backend:', err);
+        setSyncError('Error syncing with server — changes saved locally');
+      });
     }
   }, []);
 
   const deleteReading = useCallback((id: string) => {
     setReadings(prev => prev.filter(r => r.id !== id));
     if (backendRef.current) {
-      api.books.delete(id).catch(err =>
-        console.error('Failed to delete book from backend:', err),
-      );
+      api.books.delete(id).catch(err => {
+        console.error('Failed to delete book from backend:', err);
+        setSyncError('Error syncing with server — changes saved locally');
+      });
     }
   }, []);
 
@@ -252,6 +276,16 @@ export function BookProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setReadingGoal = useCallback((goal: ReadingGoal) => {
+    setReadingGoalState(goal);
+    storage.saveGoal(goal);
+    if (backendRef.current) {
+      api.goals.set(goal).catch(err =>
+        console.error('Failed to save goal to backend:', err),
+      );
+    }
+  }, []);
+
   /**
    * One-time migration: sends all current localStorage data to the backend.
    * Call this when the user first enables the backend.
@@ -283,6 +317,10 @@ export function BookProvider({ children }: { children: ReactNode }) {
         stats,
         isLoading,
         backendAvailable,
+        readingGoal,
+        setReadingGoal,
+        syncError,
+        clearSyncError,
         addReading,
         updateReading,
         deleteReading,

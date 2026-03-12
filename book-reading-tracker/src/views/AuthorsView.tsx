@@ -1,6 +1,6 @@
 // src/views/AuthorsView.tsx
 import { useState, useMemo } from 'react';
-import { Edit2, Star, ChevronLeft, ChevronRight, Users, BookOpen, FileText, TrendingUp } from 'lucide-react';
+import { Edit2, Star, StarHalf, ChevronLeft, ChevronRight, Users, BookOpen, FileText, TrendingUp, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { Stats, Reading } from '../types';
 
@@ -8,15 +8,17 @@ interface AuthorsViewProps {
   stats: Stats;
   readings: Reading[];
   onEditAuthor: (author: string) => void;
+  onBookClick?: (book: Reading) => void;
 }
 
 const WORDS_PER_PAGE = 250; // Average words per page
 
-export function AuthorsView({ stats, readings, onEditAuthor }: AuthorsViewProps) {
+export function AuthorsView({ stats, readings, onEditAuthor, onBookClick }: AuthorsViewProps) {
   const { t } = useLanguage();
   const [sortBy, setSortBy] = useState<'books' | 'pages' | 'words'>('books');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [selectedAuthorName, setSelectedAuthorName] = useState<string | null>(null);
 
   // Calculate authors with word counts and ratings
   const authorsWithWords = useMemo(() => {
@@ -108,6 +110,16 @@ export function AuthorsView({ stats, readings, onEditAuthor }: AuthorsViewProps)
     if (sortBy === 'pages') return author.pages;
     return author.words;
   };
+
+  const selectedAuthorBooks = useMemo(() => {
+    if (!selectedAuthorName) return [];
+    return readings
+      .filter(r => r.author === selectedAuthorName)
+      .sort((a, b) => {
+        if (a.parsedDate && b.parsedDate) return b.parsedDate.getTime() - a.parsedDate.getTime();
+        return 0;
+      });
+  }, [readings, selectedAuthorName]);
 
   return (
     <div className="space-y-6">
@@ -284,7 +296,8 @@ export function AuthorsView({ stats, readings, onEditAuthor }: AuthorsViewProps)
             return (
               <div
                 key={`${author.author}-${i}`}
-                className="group relative rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-500 transition-all p-4"
+                onClick={() => setSelectedAuthorName(author.author)}
+                className="group relative rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-500 transition-all p-4 cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   {/* Rank badge */}
@@ -357,7 +370,7 @@ export function AuthorsView({ stats, readings, onEditAuthor }: AuthorsViewProps)
                     </div>
 
                     <button
-                      onClick={() => onEditAuthor(author.author)}
+                      onClick={(e) => { e.stopPropagation(); onEditAuthor(author.author); }}
                       className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                       title={t.authors.editProfile}
                     >
@@ -430,6 +443,99 @@ export function AuthorsView({ stats, readings, onEditAuthor }: AuthorsViewProps)
           </div>
         )}
       </div>
+
+      {/* Author books modal */}
+      {selectedAuthorName && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl max-w-4xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-600 px-8 py-6 z-10 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-1">{selectedAuthorName}</h2>
+                  <p className="text-white/90 text-sm">
+                    {selectedAuthorBooks.length} {selectedAuthorBooks.length === 1 ? 'libro' : 'libros'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEditAuthor(selectedAuthorName); setSelectedAuthorName(null); }}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-all"
+                    title={t.authors.editProfile}
+                  >
+                    <Edit2 className="w-5 h-5 text-white" />
+                  </button>
+                  <button
+                    onClick={() => setSelectedAuthorName(null)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-all"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              {selectedAuthorBooks.length === 0 ? (
+                <div className="text-center py-12">
+                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <p className="text-gray-500 dark:text-gray-400">No hay libros de este autor</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedAuthorBooks.map((book, index) => (
+                    <div
+                      key={book.id}
+                      onClick={() => { if (onBookClick) { setSelectedAuthorName(null); onBookClick(book); } }}
+                      className={`flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 transition-all${onBookClick ? ' cursor-pointer' : ''}`}
+                    >
+                      {book.coverUrl && (
+                        <img
+                          src={book.coverUrl}
+                          alt={book.title}
+                          className="w-16 h-24 object-cover rounded-lg shadow-md flex-shrink-0"
+                          onError={(e) => e.currentTarget.style.display = 'none'}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{book.title}</h3>
+                          <span className="text-sm font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">#{index + 1}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                          {book.genre}
+                          {book.yearPublished && <span className="text-gray-400"> · {book.yearPublished}</span>}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-4 h-4" />
+                            {book.pages} páginas
+                          </span>
+                          {book.dateFinished && <span>• {book.dateFinished}</span>}
+                          {book.rating != null && book.rating > 0 && (
+                            <span className="flex items-center gap-1">
+                              •
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => {
+                                  if (i < Math.floor(book.rating!)) return <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                  if (i === Math.floor(book.rating!) && book.rating! % 1 > 0) return <StarHalf key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />;
+                                  return <Star key={i} className="w-3 h-3 text-gray-300 dark:text-gray-600" />;
+                                })}
+                              </div>
+                            </span>
+                          )}
+                        </div>
+                        {book.notes && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{book.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

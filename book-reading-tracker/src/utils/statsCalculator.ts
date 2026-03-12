@@ -213,50 +213,6 @@ export function calculateStats(
     // ==============================================
   };
 
-  return {
-    totalBooks: readings.length,
-    totalPages: readings.reduce((sum, r) => sum + r.pages, 0),
-    uniqueAuthors: authorBooks.size,
-    averagePages: readings.length > 0 
-      ? Math.round(readings.reduce((sum, r) => sum + r.pages, 0) / readings.length) 
-      : 0,
-    averageRating,
-    authorsByBooks: Array.from(authorBooks.entries())
-      .map(([author, data]) => ({ author, count: data.count, nationality: data.nationality }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 100), // Increased from 20 to 100
-    authorsByPages: Array.from(authorPages.entries())
-      .map(([author, data]) => ({ author, pages: data.pages, nationality: data.nationality }))
-      .sort((a, b) => b.pages - a.pages)
-      .slice(0, 100),
-    authorsByNationality: Array.from(nationalityCounts.entries())
-      .map(([nationality, data]) => ({ 
-        nationality, 
-        count: data.count, 
-        authors: data.authors.size 
-      }))
-      .sort((a, b) => b.count - a.count),
-    genreDistribution: Array.from(genreCounts.entries())
-      .map(([genre, data]) => ({
-        genre,
-        count: data.count,
-        pages: data.pages,
-        averageRating: data.ratedCount > 0 ? data.totalRating / data.ratedCount : 0,
-      }))
-      .sort((a, b) => b.count - a.count),
-    collectionStats: Array.from(collectionCounts.entries())
-      .map(([collection, count]) => ({ collection, count }))
-      .sort((a, b) => b.count - a.count),
-    authorProfiles: updatedProfiles,
-    monthlyReading,
-    readingStreak,
-    longestBook,
-    shortestBook,
-    favoriteBooks,
-    ratingDistribution: Array.from(ratingDist.entries())
-      .map(([rating, count]) => ({ rating, count }))
-      .sort((a, b) => b.rating - a.rating),
-  };
 }
 
 

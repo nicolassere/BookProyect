@@ -1,5 +1,9 @@
 // src/utils/hallOfFameStorage.ts
 // Storage and management utilities for Hall of Fame data
+//
+// TODO: This data should eventually sync with the backend via a new
+// /api/hall-of-fame endpoint, similar to how books sync in BookContext.
+// Currently it only persists in localStorage.
 
 import type { 
   HallOfFameData, 

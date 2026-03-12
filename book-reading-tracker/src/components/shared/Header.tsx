@@ -1,6 +1,7 @@
-import { Book, Plus, Download, Upload, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { Book, Plus, Download, Upload, Trash2, Wifi, WifiOff, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useBooks } from '../../contexts/BookContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { storage } from '../../utils/storage';
 import { api } from '../../utils/api';
 
@@ -13,6 +14,7 @@ interface HeaderProps {
 export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
   const { t, language, setLanguage } = useLanguage();
   const { readings, stats, backendAvailable, clearAllReadings } = useBooks();
+  const { theme, toggleTheme } = useTheme();
 
   const handleClearAll = () => {
     const confirmed = window.confirm(
@@ -63,6 +65,15 @@ export function Header({ onAddBook, onCSVImport, onJSONImport }: HeaderProps) {
           </div>
 
           <div className="flex gap-2 items-center">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
             {/* Language Selector */}
             <select
               value={language}
