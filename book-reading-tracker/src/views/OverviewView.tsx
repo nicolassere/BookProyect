@@ -3,19 +3,21 @@ import { Book, Users, BarChart3, TrendingUp, Tag, Globe, Star, StarHalf, Award, 
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBooks } from '../contexts/BookContext';
 import { StatCard } from '../components/shared/StatCard';
-import { ReadingHeatmap } from '../components/charts/ReadingHeatmap';
-import type { Stats } from '../types';
+import { MonthlyBooksChart } from '../components/charts/MonthlyBooksChart';
+import type { Stats, Reading } from '../types';
 
 interface OverviewViewProps {
   stats: Stats;
+  readings: Reading[];
+  onBookClick?: (book: Reading) => void;
 }
 
-export function OverviewView({ stats }: OverviewViewProps) {
+export function OverviewView({ stats, readings, onBookClick }: OverviewViewProps) {
   const { t } = useLanguage();
-  const { readings, updateReading } = useBooks();
+  const { readings: allReadings, updateReading } = useBooks();
 
   const finishBook = (id: string) => {
-    const book = readings.find(r => r.id === id);
+    const book = allReadings.find(r => r.id === id);
     if (!book) return;
     updateReading({
       ...book,
@@ -25,7 +27,7 @@ export function OverviewView({ stats }: OverviewViewProps) {
     });
   };
 
-  const currentlyReading = readings.filter(r => r.status === 'reading');
+  const currentlyReading = allReadings.filter(r => r.status === 'reading');
 
   const daysSince = (dateStr?: string) => {
     if (!dateStr) return null;
@@ -127,8 +129,8 @@ export function OverviewView({ stats }: OverviewViewProps) {
         />
       </div>
 
-      {/* Reading Activity Heatmap */}
-      <ReadingHeatmap readings={readings} />
+      {/* Monthly reading activity */}
+      <MonthlyBooksChart readings={readings} onBookClick={onBookClick} />
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

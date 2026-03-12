@@ -335,7 +335,7 @@ function App() {
           <WelcomeScreen onAddFirst={() => setShowAddForm(true)} />
         ) : activeView === 'overview' ? (
           <div className="space-y-6">
-            <OverviewView stats={filteredStats} />
+            <OverviewView stats={filteredStats} readings={filteredReadings} onBookClick={handleBookClick} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ReadingProgressChart readings={filteredReadings} months={12} />
