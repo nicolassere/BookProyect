@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useBooks } from '../contexts/BookContext';
 import { StatCard } from '../components/shared/StatCard';
 import { MonthlyBooksChart } from '../components/charts/MonthlyBooksChart';
+import { DailyQuote } from '../components/shared/DailyQuote';
 import type { Stats, Reading } from '../types';
 
 interface OverviewViewProps {
@@ -101,6 +102,9 @@ export function OverviewView({ stats, readings, onBookClick }: OverviewViewProps
           </div>
         </div>
       )}
+      {/* Daily quote */}
+      <DailyQuote />
+
       {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
