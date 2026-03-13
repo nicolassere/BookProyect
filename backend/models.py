@@ -1,6 +1,8 @@
 from sqlalchemy import Column, String, Integer, Float, Boolean, Text
 from database import Base
 
+_HALL_OF_FAME_EMPTY = '{"badges":[],"categories":[],"nominations":[],"annualAwards":[],"rankings":[],"authorPhotos":{}}'
+
 
 class Book(Base):
     __tablename__ = "books"
@@ -45,3 +47,10 @@ class ReadingGoal(Base):
 
     year = Column(Integer, primary_key=True)
     target_books = Column(Integer, nullable=False)
+
+
+class HallOfFame(Base):
+    __tablename__ = "hall_of_fame"
+
+    id = Column(Integer, primary_key=True, default=1)
+    data = Column(Text, nullable=False, default=_HALL_OF_FAME_EMPTY)

@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useBooks } from '../contexts/BookContext';
 import { StatCard } from '../components/shared/StatCard';
 import { MonthlyBooksChart } from '../components/charts/MonthlyBooksChart';
+import { BookShelf } from '../components/shared/BookShelf';
 import type { Stats, Reading } from '../types';
 
 interface OverviewViewProps {
@@ -316,6 +317,9 @@ export function OverviewView({ stats, readings, onBookClick }: OverviewViewProps
           )}
         </div>
       )}
+
+      {/* Virtual Bookshelf */}
+      <BookShelf readings={readings} onBookClick={onBookClick} />
 
       {/* Rating Distribution */}
       {stats.ratingDistribution.length > 0 && (

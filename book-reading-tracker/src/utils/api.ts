@@ -7,6 +7,7 @@
  */
 
 import type { Reading, AuthorProfile, ReadingGoal } from '../types';
+import type { HallOfFameData } from '../types/hallOfFame';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000/api';
 
@@ -218,5 +219,22 @@ export const api = {
     csv: () => window.open(`${API_BASE}/export/csv`, '_blank'),
     /** Opens the full backup JSON download (books + authors + goals). */
     backup: () => window.open(`${API_BASE}/export/backup`, '_blank'),
+  },
+
+  hallOfFame: {
+    get: async (): Promise<HallOfFameData | null> => {
+      try {
+        const res = await apiFetch<{ data: HallOfFameData }>('/hall-of-fame/');
+        return res.data;
+      } catch {
+        return null;
+      }
+    },
+    set: async (data: HallOfFameData): Promise<void> => {
+      await apiFetch('/hall-of-fame/', {
+        method: 'PUT',
+        body: JSON.stringify({ data }),
+      });
+    },
   },
 };

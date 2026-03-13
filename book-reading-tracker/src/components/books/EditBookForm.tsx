@@ -154,7 +154,6 @@ export function EditBookForm({
       chaptersRead: chaptersRead && chaptersRead.length > 0 ? chaptersRead : undefined,
     };
 
-    console.log('Saving updated book:', updatedBook);
     onSave(updatedBook);
   };
 

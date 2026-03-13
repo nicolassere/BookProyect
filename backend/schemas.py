@@ -69,3 +69,7 @@ class BulkImportResponse(BaseModel):
     skipped: int
     total: int
     message: str
+
+
+class HallOfFamePayload(BaseModel):
+    data: dict

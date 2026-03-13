@@ -1,19 +1,18 @@
 // src/utils/hallOfFameStorage.ts
-// Storage and management utilities for Hall of Fame data
-//
-// TODO: This data should eventually sync with the backend via a new
-// /api/hall-of-fame endpoint, similar to how books sync in BookContext.
-// Currently it only persists in localStorage.
+// Storage and management utilities for Hall of Fame data.
+// Persists to localStorage (sync, for immediate reads) and syncs
+// to the backend (async, fire-and-forget) when available.
 
-import type { 
-  HallOfFameData, 
-  BookBadge, 
-  CustomCategory, 
-  CategoryNomination, 
-  AnnualAward, 
+import type {
+  HallOfFameData,
+  BookBadge,
+  CustomCategory,
+  CategoryNomination,
+  AnnualAward,
   CustomRanking,
   Badge,
 } from '../types/hallOfFame';
+import { api } from './api';
 
 const STORAGE_KEY = 'hall_of_fame_data';
 
@@ -83,6 +82,19 @@ export function saveHallOfFame(data: HallOfFameData): void {
   } catch (e) {
     console.error('Error saving Hall of Fame:', e);
   }
+  // Fire-and-forget backend sync
+  api.hallOfFame.set(data).catch(() => {/* backend unavailable, localStorage is the fallback */});
+}
+
+/** Load Hall of Fame from backend; if successful, updates localStorage cache. */
+export async function syncHallOfFameFromAPI(): Promise<HallOfFameData | null> {
+  const data = await api.hallOfFame.get();
+  if (data) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {/* ignore */}
+  }
+  return data;
 }
 
 // Badge operations

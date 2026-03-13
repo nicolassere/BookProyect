@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routers import authors, books, export, goals
+from routers import authors, books, export, goals, hall_of_fame
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app.include_router(books.router, prefix="/api/books", tags=["Books"])
 app.include_router(authors.router, prefix="/api/authors", tags=["Authors"])
 app.include_router(goals.router, prefix="/api/goals", tags=["Goals"])
 app.include_router(export.router, prefix="/api", tags=["Import / Export"])
+app.include_router(hall_of_fame.router, prefix="/api/hall-of-fame", tags=["Hall of Fame"])
 
 
 @app.get("/api/health", tags=["Health"])

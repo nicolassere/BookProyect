@@ -19,6 +19,7 @@ import {
   SUGGESTED_CATEGORIES,
   loadHallOfFame,
   saveHallOfFame,
+  syncHallOfFameFromAPI,
   assignBadge,
   removeBadge,
   getBookBadges,
@@ -304,6 +305,14 @@ export function HallOfFameView() {
   const { readings } = useBooks();
   const [activeTab, setActiveTab] = useState<TabType>('awards');
   const [hofData, setHofData] = useState<HallOfFameData>(() => loadHallOfFame());
+
+  // Sync from backend on mount; updates state if backend has newer/different data
+  useEffect(() => {
+    syncHallOfFameFromAPI().then(data => {
+      if (data) setHofData(data);
+    });
+  }, []);
+
   const [showBookSearch, setShowBookSearch] = useState(false);
   const [searchContext, setSearchContext] = useState<{
     type: 'badge' | 'category' | 'ranking' | 'annual';
